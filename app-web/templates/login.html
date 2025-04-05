@@ -1,0 +1,48 @@
+{% extends "navbar/navUser.html" %} {% block contentt%}
+<section class="login">
+  <div class="box">
+    <div class="form">
+      <img src="../static/css/img/_user.jpg" class="user" alt="" />
+      <h2>Bienvenido</h2>
+      <form
+        method="POST"
+        action="{{ url_for('login') }}"
+        enctype="multipart/form-data"
+      >
+        <div class="inputBx">
+          <input
+            type="text"
+            name="cedula"
+            placeholder="Cédula"
+            id="cedula"
+            required
+            autofocus
+          />
+          <img src="../static/css/img/user.png" alt="" />
+        </div>
+        <div class="inputBx">
+          <input
+            type="password"
+            name="password"
+            id="password"
+            placeholder="Contraseña"
+            required
+          />
+          <img src="../static/css/img/lock.png" alt="" />
+        </div>
+        <div class="inputBx">
+          <input
+            type="submit"
+            name="submit"
+            value="Iniciar Sesión"
+            id="submit"
+          />
+        </div>
+      </form>
+      {% if error %}
+      <p class="alerError" style="color: red">{{ error }}</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

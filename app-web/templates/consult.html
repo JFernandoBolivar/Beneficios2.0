@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Consulta</title>
+  </head>
+  <body>
+    <h1>Consulta</h1>
+    {% if errorFamily %}
+    <div class="alert alert-danger">{{ errorFamily }}</div>
+    {% endif %} {% if successMessage %}
+    <div class="alert alert-success">{{ successMessage }}</div>
+    {% endif %}
+    <!-- Aquí puedes agregar más contenido según tus necesidades -->
+  </body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    {% block head %}{% endblock %}
+    <script>
+        // Function to check session status
+        function checkSession() {
+            fetch('/logout')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.active) {
+                        // Session expired, redirect to login page
+                        window.location.href = '/login';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking session:', error);
+                });
+        }
+        
+        // Check session every 30 seconds (30000 milliseconds)
+        setInterval(checkSession, 30000);
+    </script>
+</head>
+<body>
+    {% block content %}{% endblock %}
+</body>
+</html>
+

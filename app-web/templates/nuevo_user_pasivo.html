@@ -1,0 +1,186 @@
+{% extends "navbar/navUser.html" %} {% block contentt %}
+<div class="dataUser mt-5">
+  <button id="exit3">X</button>
+  <article class="button-group">
+    <a
+      class="reff left deactivate"
+      id="btn-activos"
+      href="{{ url_for('NuevoUserActivo') }}"
+      >Activos</a
+    >
+    <a
+      class="reff right active"
+      id="btn-pasivos"
+      href="{{ url_for('NuevoUserPasivo') }}"
+      >Pasivos</a
+    >
+  </article>
+  <h2 class="tituloRegist">Registro de Trabajadores Pasivos</h2>
+  <form
+    action="{{ url_for('NuevoUserPasivo') }}"
+    method="post"
+    id="registroForms"
+  >
+    <div class="row">
+      <div class="col-md-6">
+        <div class="form-group">
+          <label for="cedula">Cédula</label>
+          <input
+            type="number"
+            class="form-control dateI"
+            id="cedula"
+            name="cedula"
+            required
+            maxlength="11"
+          />
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label for="nombreCompleto">Nombre Completo</label>
+          <input
+            type="text"
+            class="form-control dateI"
+            id="nombreCompleto"
+            name="nombreCompleto"
+            required
+          />
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6">
+        <div class="form-group">
+          <label for="Nombre_Familiar">Nombre del Autorizado</label>
+          <input
+            type="text"
+            class="form-control dateI"
+            id="Nombre_Familiar"
+            name="Nombre_Familiar"
+          />
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label for="CI_Familiar">Cédula del Autorizado</label>
+          <input
+            type="number"
+            class="form-control dateI"
+            id="CI_Familiar"
+            name="cedula-family"
+            maxlength="12"
+          />
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="form-group col-md-6">
+        <label for="CodigoCarnet">Codigo Carnet</label>
+        <input
+          type="number"
+          class="form-control dateI"
+          id="CodigoCarnet"
+          name="CodigoCarnet"
+          required
+        />
+      </div>
+      <div class="form-group col-md-6">
+        <label for="estado">Estado</label>
+        <select class="form-control dateI" id="estado" name="estado" required>
+          <option value="DISTRITO CAPITAL">DISTRITO CAPITAL</option>
+          <option value="AMAZONAS">AMAZONAS</option>
+          <option value="ANZOÁTEGUI">ANZOÁTEGUI</option>
+          <option value="APURE">APURE</option>
+          <option value="ARAGUA">ARAGUA</option>
+          <option value="BARINAS">BARINAS</option>
+          <option value="BOLÍVAR">BOLÍVAR</option>
+          <option value="CARABOBO">CARABOBO</option>
+          <option value="COJEDES">COJEDES</option>
+          <option value="DELTA AMACURO">DELTA AMACURO</option>
+          <option value="FALCÓN">FALCÓN</option>
+          <option value="GUÁRICO">GUÁRICO</option>
+          <option value="LARA">LARA</option>
+          <option value="MÉRIDA">MÉRIDA</option>
+          <option value="MIRANDA">MIRANDA</option>
+          <option value="MONAGAS">MONAGAS</option>
+          <option value="NUEVA ESPARTA">NUEVA ESPARTA</option>
+          <option value="PORTUGUESA">PORTUGUESA</option>
+          <option value="SUCRE">SUCRE</option>
+          <option value="TÁCHIRA">TÁCHIRA</option>
+          <option value="TRUJILLO">TRUJILLO</option>
+          <option value="VARGAS">VARGAS</option>
+          <option value="YARACUY">YARACUY</option>
+          <option value="ZULIA">ZULIA</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="observacion">Observación</label>
+      <textarea
+        class="form-control dateI"
+        id="observacion"
+        name="observacion"
+        rows="3"
+      ></textarea>
+    </div>
+    <div class="row selector">
+      <div class="form-check col-md-6">
+        <label class="textCheck" class="respuesta">Entregado?</label>
+        <label for="entregado">Si</label>
+        <input
+          type="checkbox"
+          class="form-check-input"
+          id="entregado"
+          name="entregado"
+        />
+      </div>
+      <div class="form-check col-md-6">
+        <label class="textCheck" class="respuesta">Meriendas?</label>
+        <label for="lunch">Si</label>
+        <input
+          type="checkbox"
+          class="form-check-input"
+          id="lunch"
+          name="lunch"
+          value="1"
+        />
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary userResgresar">
+      Registrar
+    </button>
+  </form>
+</div>
+
+{% if error %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  Swal.fire({
+    icon: "error",
+    title: "Oops...",
+    background: "#fff",
+    color: "#000",
+    text: "{{ error }}",
+    customClass: {
+      title: "swal-title",
+      content: "swal-text",
+    },
+  });
+</script>
+{% endif %} {% if success %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  Swal.fire({
+    icon: "success",
+    title: "¡Éxito!",
+    background: "#fff",
+    color: "#000",
+    text: "{{ success }}",
+    customClass: {
+      title: "swal-title",
+      content: "swal-text",
+    },
+  });
+</script>
+{% endif %} {% endblock %}

@@ -1,0 +1,81 @@
+{% extends "navbar/navUser.html" %} {% block contentt%}
+<div class="container_tabla">
+  <div class="header_tabla">
+    <button class="exit_tabla">
+      <i class="bx bx-log-out"></i><label class="salir">Salir</label>
+    </button>
+
+    <a
+      href="{{ url_for('listado_no_regist_pdf') }}"
+      class="btn btn-primary"
+      target="_blank"
+      id="downloadPDF1"
+      >Descargar <i class="bx bxs-download fs-3"></i
+    ></a>
+  </div>
+  <h1 class="fs-3">Listado de Personas que no han Recibido la Caja</h1>
+  <div class="contentBusc">
+    <button id="search">
+      <i class="bx bx-search buscSearch"></i>
+    </button>
+    <div class="filtrosContent">
+      <input type="text" id="buscarCedula" placeholder="buscar cedula" />
+      <input type="text" id="buscarUnidadFisica" placeholder="Nombre" />
+      <input type="text" id="buscarEstado" placeholder="Unidad Fisica" />
+    </div>
+  </div>
+  <div
+    class="table-responsive"
+    id="tabla2"
+    style="max-height: 300px; overflow-y: auto; border-collapse: collapse"
+  >
+    <table class="table table-striped table-bordered">
+      <thead class="table-dark">
+        <tr>
+          <th scope="col">Cedula</th>
+          <th scope="col">Codigo</th>
+          <th scope="col">Nombre Completo</th>
+          <th scope="col">Ubicación Fisica</th>
+          <th scope="col">Ubicación administrativa</th>
+          <th scope="col">Estado</th>
+          <th scope="col">Estatus</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for registro in registros %}
+        <tr>
+          <td>{{ registro.Cedula }}</td>
+          <td>{{registro.Code if registro.Code else ' ' }}</td>
+          <td>{{ registro.Name_Com }}</td>
+          <td>
+            {{registro.Location_Physical if registro.Location_Physical else " "
+            }}
+          </td>
+          <td>
+            {{registro.Location_Admin if registro.Location_Admin else " "}}
+          </td>
+          <td>{{registro.ESTADOS if registro.ESTADOS else " " }}</td>
+          <td>
+            {% if registro.Estatus == 1 %} Activo {% elif registro.Estatus == 2
+            %} Pasivo {% elif registro.Estatus == 3 or registro.Estatus == 4 %}
+            Suspendido {% elif registro.Estatus == 5 %} Fuera del país {% elif
+            registro.Estatus == 6 %} Fallecido {% elif registro.Estatus == 7 or
+            registro.Estatus == 8 %} Se requiere verificar {% else %}
+            Desconocido {% endif %}
+          </td>
+          {% else %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="skp_tabla">
+    <p class="Nros">Total:<b>{{ total_personas }}</b></p>
+
+    <button id="next2" class="next_tabla">
+      <label class="next">Entregadas</label>
+      <i class="bx bxs-right-arrow-square"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}

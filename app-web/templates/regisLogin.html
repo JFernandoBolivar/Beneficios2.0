@@ -1,0 +1,63 @@
+{% extends "navbar/navUser.html" %} {% block contentt%}
+<section class="login">
+  <div class="box">
+    <div class="form">
+      <h2>Registrar Usuario</h2>
+      <form
+        method="POST"
+        action="{{ url_for('RegistUser') }}"
+        enctype="multipart/form-data"
+      >
+        <div class="inputBx">
+          <input
+            type="text"
+            name="cedula"
+            placeholder="Cédula"
+            id="cedula"
+            required
+            autofocus
+          />
+          <img src="../static/css/img/user.png" alt="" />
+
+          <img src="../static/css/img/user.png" alt="" />
+        </div>
+        <div class="inputBx">
+          <input
+            type="text"
+            name="username"
+            placeholder="Nombre de usuario"
+            id="usuario"
+            required
+            autofocus
+          />
+          <img src="../static/css/img/user.png" alt="" />
+        </div>
+
+        <div class="inputBx">
+          <input
+            type="password"
+            name="password"
+            id="password"
+            placeholder="Contraseña"
+            required
+          />
+          <img src="../static/css/img/lock.png" alt="" />
+        </div>
+        <div class="inputBx">
+          <input type="submit" name="registrar" value="Registrar" id="submit" />
+        </div>
+      </form>
+      {% if error %}
+      <article class="regist">
+        <p class="alerError" style="color: red">{{ error }}</p>
+      </article>
+
+      {% endif %} {% if success %}
+      <article class="regist">
+        <p class="alertsuccess" style="color: rgb(0, 255, 94)">{{ success }}</p>
+      </article>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

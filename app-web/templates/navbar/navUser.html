@@ -1,0 +1,154 @@
+{% extends "layout.html" %} {% block content %} {% if request.path != "/login"
+%}
+<nav class="navbar navbar-expand-lg bg-dark navbar-dark">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="{{url_for('consult')}}"
+      ><img
+        src="{{ url_for('static', filename='css/img/logoo.png') }}"
+        class="logoNav"
+    /></a>
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarNavDropdown"
+      aria-controls="navbarNavDropdown"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNavDropdown">
+      <ul class="navbar-nav me-3 menuu">
+        <li class="nav-item dropdown">
+          <a
+            class="nav-link active fs-5"
+            href="{{url_for('consult')}}"
+            role="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            Home
+          </a>
+        </li>
+      </ul>
+
+      <ul class="navbar-nav">
+        <li class="nav-item dropdown">
+          <a
+            class="nav-link dropdown-toggle fs-5"
+            href="#"
+            role="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            Personal
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end text-center bg-dark">
+            {% if session.get('Super_Admin') == 1 %}
+            <li>
+              <a class="dropdown-item" href="{{ url_for('NuevoUserPasivo') }}"
+                >Registrar</a
+              >
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{url_for('cambiar_estatus')}}"
+                >Estatus</a
+              >
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{ url_for('listado') }}"
+                >Listado</a
+              >
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{ url_for('reporte') }}"
+                >Reporte</a
+              >
+            </li>
+            {% endif %} {% if session.get('Super_Admin') == 0 %}
+            <li>
+              <a class="dropdown-item" href="{{ url_for('listado') }}"
+                >Listado</a
+              >
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{ url_for('reporte') }}"
+                >Reporte</a
+              >
+            </li>
+            {% endif %}
+          </ul>
+        </li>
+      </ul>
+
+      <ul class="navbar-nav me-3">
+        <li class="nav-item dropdown">
+          <a
+            class="nav-link dropdown-toggle fs-5"
+            href="#"
+            role="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            Usuarios
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end text-center bg-dark">
+            <li>
+              <a class="dropdown-item" href="{{ url_for('usuarios') }}"
+                >Editar</a
+              >
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{url_for('RegistUser')}}"
+                >Registrar</a
+              >
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{ url_for('tipo_user') }}"
+                >Estatus</a
+              >
+            </li>
+            <hr class="dropdown-divider" />
+            <li>
+              <a class="dropdown-item" href="{{url_for('reporte_usuarios')}}"
+                >Historial de Acciones</a
+              >
+            </li>
+          </ul>
+        </li>
+      </ul>
+      <!-- Menú de usuario alineado a la derecha -->
+      <ul class="navbar-nav ms-auto me-3">
+        <li class="nav-item dropdown">
+          <a
+            class="nav-link dropdown-toggle fs-5"
+            href="#"
+            role="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            {% if session.get('loggedin') %} {{ session.get('username') }} {%
+            else %} Usuario {% endif %}
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end text-center bg-dark">
+            <li>
+              <a
+                class="dropdown-item"
+                href="{{ url_for('editar_usuario', cedula=session.get('cedula') ) }}"
+                >Configuracion de usuario</a
+              >
+            </li>
+            <hr class="dropdown-divider" />
+            <li>
+              <a class="dropdown-item" href="{{ url_for('logout') }}"
+                >Cerrar Sesión</a
+              >
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+{% endif %} {% block contentt %} {% endblock %} {% endblock %}
