@@ -312,9 +312,15 @@ def registrar():
         return redirect(url_for('login'))
     cedula = request.form['cedula']
     cedula_personal = request.form['cedula_personal']
+    super_admin = session.get('Super_Admin')
+    fecha = request.form.get('fecha', None)
     CIFamily = request.form.get('cedulafamiliar', None)
     lunch = request.form.get('lunch', '0')
-
+     
+    if super_admin == 0:
+        # Si el usuario es básico, solo puede ver los datos del día actual
+        fecha = datetime.now().strftime('%Y-%m-%d')
+        
     cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute('SELECT * FROM data WHERE Cedula = %s', (cedula,))
     data_exit = cursor.fetchone()
@@ -325,7 +331,7 @@ def registrar():
         cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT COUNT(*) AS total_personas FROM data')
         total_personas = cursor.fetchone()['total_personas']
-        cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1')
+        cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(d.Time_box) = %s', (fecha,))
         total_recibido = cursor.fetchone()['total_recibido']
         faltan = total_personas - total_recibido
         cursor.close()
@@ -340,7 +346,8 @@ def registrar():
         cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT COUNT(*) AS total_personas FROM data')
         total_personas = cursor.fetchone()['total_personas']
-        cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1')
+     
+        cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(d.Time_box) = %s', (fecha,))
         total_recibido = cursor.fetchone()['total_recibido']
         faltan = total_personas - total_recibido
         cursor.close()
@@ -356,7 +363,7 @@ def registrar():
             cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
             cursor.execute('SELECT COUNT(*) AS total_personas FROM data')
             total_personas = cursor.fetchone()['total_personas']
-            cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1')
+            cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(d.Time_box) = %s', (fecha,))
             total_recibido = cursor.fetchone()['total_recibido']
             faltan = total_personas - total_recibido
             cursor.close()
@@ -380,7 +387,7 @@ def registrar():
     cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute('SELECT COUNT(*) AS total_personas FROM data')
     total_personas = cursor.fetchone()['total_personas']
-    cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1')
+    cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(d.Time_box) = %s', (fecha,))
     total_recibido = cursor.fetchone()['total_recibido']
     faltan = total_personas - total_recibido
     cursor.close()
@@ -433,18 +440,31 @@ def reporte_entregas_usuario():
     
     return render_template('reporte_entregas_usuario.html', reportes=reportes)
 
-@app.route("/reporte_entregas_usuario_excel", methods=["GET"])
+@app.route("/reporte_entregas_usuario_excel", methods=["GET", "POST"])
 def reporte_entregas_usuario_excel():
     if 'loggedin' not in session:
         return redirect(url_for('login'))
     
+    # Obtener la fecha del formulario
+    fecha = request.form.get('fecha', None)
+    
     cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('''
-        SELECT Staff_ID, DATE(Time_box) as fecha, COUNT(*) as total_entregas
-        FROM delivery
-        WHERE Entregado = 1
-        GROUP BY Staff_ID, DATE(Time_box)
-    ''')
+    
+    # Filtrar por fecha si se proporciona
+    if fecha:
+        cursor.execute('''
+            SELECT Staff_ID, DATE(Time_box) as fecha, COUNT(*) as total_entregas
+            FROM delivery
+            WHERE Entregado = 1 AND DATE(Time_box) = %s
+            GROUP BY Staff_ID, DATE(Time_box)
+        ''', (fecha,))
+    else:
+        cursor.execute('''
+            SELECT Staff_ID, DATE(Time_box) as fecha, COUNT(*) as total_entregas
+            FROM delivery
+            WHERE Entregado = 1
+            GROUP BY Staff_ID, DATE(Time_box)
+        ''')
     
     reportes = cursor.fetchall()
     cursor.close()
@@ -497,7 +517,6 @@ def reporte_entregas_usuario_excel():
     output.seek(0)
 
     return send_file(output, download_name="reporte_entregas_usuario.xlsx", as_attachment=True)
-
 
 # EDITAR EL ESTATUS DE LOS USUARIOS
 @app.route("/cambiar_estatus", methods=["GET", "POST"])

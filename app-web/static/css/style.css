@@ -237,6 +237,38 @@ input[type="number"] {
   border-radius: 10px;
 }
 
+/* generar excel reporte */
+
+.excel2 {
+  display: none;
+}
+.excel2 > span {
+  display: flex;
+  border-top: solid 1px #000;
+  box-sizing: border-box;
+  overflow: hidden;
+  word-wrap: break-word;
+  padding: 3em;
+  max-width: 100%;
+  justify-content: center;
+}
+.excel2 > span > form {
+  display: flex;
+  justify-content: left;
+  align-items: center;
+  margin-bottom: 1em;
+  margin-left: 0.5em;
+  margin-top: -0.8em;
+  flex-wrap: wrap;
+}
+.fehs {
+  margin-bottom: 1em;
+}
+.report {
+  margin-top: -1em;
+}
+
+/* ........................ */
 .datos > h1 {
   text-align: center;
   font-weight: 700;
@@ -503,11 +535,11 @@ input[type="number"] {
   color: red;
 }
 
-/* @media (max-width: 768px) {
-  .dataUser {
-    width: 90%;
+@media (max-width: 768px) {
+  .fehss > button {
+    margin-top: 1em;
   }
-} */
+}
 
 @media (max-width: 480px) {
   .container {
@@ -517,6 +549,10 @@ input[type="number"] {
   .buscarEntrega,
   .buscarEstado {
     display: none;
+  }
+
+  .fehss > button {
+    margin-top: 1em;
   }
   .alert {
     width: fit-content;
@@ -557,7 +593,9 @@ input[type="number"] {
   .datos {
     width: 90%;
   }
-
+  .fechss > button {
+    margin-top: 0.5em;
+  }
   .header_tabla > .exit_tabla > .bx {
     font-size: 1.5em;
     transform: translate(-1px, 5px);

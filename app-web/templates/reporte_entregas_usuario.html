@@ -4,10 +4,23 @@
     <button class="exit_tabla">
       <i class="bx bx-log-out"></i><label class="salir">Salir</label>
     </button>
-    <a
-      href="{{ url_for('reporte_entregas_usuario_excel') }}"
-      class="btn btn-primary"
-      id="downloadPDF1"
+    <div class="alert excel2" role="alert">
+      <button id="exit">X</button>
+      <h1 class="fs-3 report mt-1">Reporte de Entregas por Usuario</h1>
+      <span
+        ><form
+          method="POST"
+          action="{{ url_for('reporte_entregas_usuario_excel') }}"
+          class="form-fecha mt-3"
+        >
+          <label for="fecha">Fecha:</label>
+          <input type="date" id="fecha" name="fecha" class="form-control" />
+          <button type="submit" class="btn btn-dark">Generar Excel</button>
+        </form></span
+      >
+    </div>
+
+    <a class="btn btn-primary" id="downloadPDF1"
       >Descargar<i class="bx bxs-download fs-3"></i
     ></a>
   </div>
@@ -16,7 +29,7 @@
   <form
     method="POST"
     action="{{ url_for('reporte_entregas_usuario') }}"
-    class="form-fecha"
+    class="form-fecha fechss mt-3"
   >
     <label for="fecha">Fecha:</label>
     <input type="date" id="fecha" name="fecha" class="form-control" />

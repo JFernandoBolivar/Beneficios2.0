@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const next = document.getElementById("next");
     const next2 = document.getElementById("next2");
     const closes_buttons = document.querySelectorAll('#closes');
+    const open = document.querySelectorAll('#downloadPDF1');
 
     if (exit) {
         exit.addEventListener("click", () => {
@@ -38,6 +39,15 @@ document.addEventListener("DOMContentLoaded", () => {
     exit_tabla_buttons.forEach(button => {
         button.addEventListener('click', () => {
             window.location.href = "/";
+        });
+    });
+
+    open.forEach(button => {
+        button.addEventListener('click', () => {
+            const content27 = document.querySelector(".excel2");
+            if (content27) {
+                content27.style.display = "flex";
+            }
         });
     });
 
