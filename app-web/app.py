@@ -331,7 +331,7 @@ def registrar():
         cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT COUNT(*) AS total_personas FROM data')
         total_personas = cursor.fetchone()['total_personas']
-        cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(d.Time_box) = %s', (fecha,))
+        cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(Time_box) = %s', (fecha,))
         total_recibido = cursor.fetchone()['total_recibido']
         faltan = total_personas - total_recibido
         cursor.close()
@@ -347,7 +347,7 @@ def registrar():
         cursor.execute('SELECT COUNT(*) AS total_personas FROM data')
         total_personas = cursor.fetchone()['total_personas']
      
-        cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(d.Time_box) = %s', (fecha,))
+        cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(Time_box) = %s', (fecha,))
         total_recibido = cursor.fetchone()['total_recibido']
         faltan = total_personas - total_recibido
         cursor.close()
@@ -363,7 +363,7 @@ def registrar():
             cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
             cursor.execute('SELECT COUNT(*) AS total_personas FROM data')
             total_personas = cursor.fetchone()['total_personas']
-            cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(d.Time_box) = %s', (fecha,))
+            cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(Time_box) = %s', (fecha,))
             total_recibido = cursor.fetchone()['total_recibido']
             faltan = total_personas - total_recibido
             cursor.close()
@@ -387,7 +387,7 @@ def registrar():
     cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute('SELECT COUNT(*) AS total_personas FROM data')
     total_personas = cursor.fetchone()['total_personas']
-    cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(d.Time_box) = %s', (fecha,))
+    cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(Time_box) = %s', (fecha,))
     total_recibido = cursor.fetchone()['total_recibido']
     faltan = total_personas - total_recibido
     cursor.close()
@@ -906,11 +906,12 @@ def listado_excel():
         fecha = request.form['fecha']
         cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('''
-            SELECT d.Data_ID, d.Time_box, d.Entregado,  d.Staff_ID, d.Observation, d.Lunch,d.Cedula_Family, d.Name_Family,
-                   data.Cedula, data.Name_Com,data.Manually,data.Location_Admin,data.Estatus,data.ESTADOS, data.Location_Physical 
+            SELECT d.Data_ID, d.Time_box, d.Entregado, d.Staff_ID, d.Observation, d.Lunch, d.Cedula_Family, d.Name_Family,
+                   data.Cedula, data.Name_Com, data.Manually, data.Location_Admin, data.Estatus, data.ESTADOS, data.Location_Physical 
             FROM delivery d
             JOIN data ON d.Data_ID = data.ID
             WHERE d.Entregado = 1 AND DATE(d.Time_box) = %s
+            ORDER BY data.ESTADOS ASC, data.Location_Physical ASC, data.Location_Admin ASC
         ''', (fecha,))
         registros = cursor.fetchall()
         cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(Time_box) = %s', (fecha,))
@@ -928,16 +929,13 @@ def listado_excel():
         img1.width, img1.height = 60, 60
         img2.width, img2.height = 60, 60
         ws.add_image(img1, 'A1')
-        
 
         headers = ["#", "Cedula", "Nombre Completo", "Estado", "Estatus", "Unidad Fisica", "Ubicación administrativa", "Hora de Entrega", "Cedula del Autorizado", "Nombre del Autorizado", "Observacion", "Registro Manual", "Merienda", "Cedula del Registrador", "Nombre del Registrador"]
-        
 
-        last_column = chr(64 + len(headers))  
- 
+        last_column = chr(64 + len(headers))
         img2.anchor = f'{last_column}1'
         ws.add_image(img2)
-        
+
         ws.row_dimensions[1].height = 55
 
         ws.merge_cells(f'A1:{last_column}1')
@@ -961,70 +959,31 @@ def listado_excel():
             staff_name = cursor.fetchone()['Name_Com']
             cursor.close()
 
-            if registro['Estatus'] == 2:
-                estatus = "Pasivo"
-                row = [
-                    idx,
-                    registro['Cedula'],
-                    registro['Name_Com'],
-                    registro['ESTADOS'],
-                    estatus,
-                    "",
-                    registro['Location_Admin'],
-                    registro['Time_box'],
-                    registro['Cedula_Family'] if registro['Cedula_Family'] else '',
-                    registro['Name_Family'] if registro['Name_Family'] else '',
-                    registro['Observation'] if registro['Observation'] else ' ',
-                    "Si" if registro['Manually'] else 'No',
-                    "Si" if registro['Lunch'] else 'No',
-                    registro['Staff_ID'],
-                    staff_name
-                ]
-            elif registro['Estatus'] == 1:
-                estatus = "Activo"
-                row = [
-                    idx,
-                    registro['Cedula'],
-                    registro['Name_Com'],
-                    "",
-                    estatus,
-                    registro['Location_Physical'],
-                    registro['Location_Admin'],
-                    registro['Time_box'],
-                    registro['Cedula_Family'] if registro['Cedula_Family'] else '',
-                    registro['Name_Family'] if registro['Name_Family'] else '',
-                    registro['Observation'],
-                    "Si" if registro['Manually'] else 'No',
-                    "Si" if registro['Lunch'] else 'No',
-                    registro['Staff_ID'],
-                    staff_name
-                ]
-            else:
-                estatus = "Activo" if registro['Estatus'] == 1 else "Pasivo"
-                row = [
-                    idx,
-                    registro['Cedula'],
-                    registro['Name_Com'],
-                    registro['ESTADOS'] if registro['Estatus'] == 2 else "",
-                    estatus,
-                    registro['Location_Physical'] if registro['Estatus'] == 1 else "",
-                    registro['Location_Admin'] if registro['Estatus'] == 1 else "",
-                    registro['Time_box'],
-                    registro['Cedula_Family'] if registro['Cedula_Family'] else '',
-                    registro['Name_Family'] if registro['Name_Family'] else '',
-                    registro['Observation'],
-                    "Si" if registro['Manually'] else 'No',
-                    "Si" if registro['Lunch'] else 'No',
-                    registro['Staff_ID'],
-                    staff_name
-                ]
+            estatus = "Activo" if registro['Estatus'] == 1 else "Pasivo"
+            row = [
+                idx,
+                registro['Cedula'],
+                registro['Name_Com'],
+                registro['ESTADOS'] if registro['Estatus'] == 2 else "",
+                estatus,
+                registro['Location_Physical'] if registro['Estatus'] == 1 else "",
+                registro['Location_Admin'] if registro['Estatus'] == 1 else "",
+                registro['Time_box'],
+                registro['Cedula_Family'] if registro['Cedula_Family'] else '',
+                registro['Name_Family'] if registro['Name_Family'] else '',
+                registro['Observation'] if registro['Observation'] else ' ',
+                "Si" if registro['Manually'] else 'No',
+                "Si" if registro['Lunch'] else 'No',
+                registro['Staff_ID'],
+                staff_name
+            ]
             ws.append(row)
             for cell in ws[ws.max_row]:
                 cell.alignment = Alignment(wrap_text=True, horizontal="center", vertical="center")
                 cell.border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
 
         column_widths = {
-           'A': 7,
+            'A': 7,
             'B': 10,
             'C': 20,
             'D': 20,
