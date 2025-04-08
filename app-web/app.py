@@ -904,20 +904,33 @@ def listado_pdf():
 def listado_excel():
     if request.method == "POST":
         fecha = request.form['fecha']
-        cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('''
+        filtro = request.form.get('filtro', 'todos')  # Obtiene el filtro seleccionado
+
+        # Construir la consulta SQL dinámicamente
+        query = '''
             SELECT d.Data_ID, d.Time_box, d.Entregado, d.Staff_ID, d.Observation, d.Lunch, d.Cedula_Family, d.Name_Family,
                    data.Cedula, data.Name_Com, data.Manually, data.Location_Admin, data.Estatus, data.ESTADOS, data.Location_Physical 
             FROM delivery d
             JOIN data ON d.Data_ID = data.ID
             WHERE d.Entregado = 1 AND DATE(d.Time_box) = %s
-            ORDER BY data.ESTADOS ASC, data.Location_Physical ASC, data.Location_Admin ASC
-        ''', (fecha,))
+        '''
+        if filtro == 'autorizados':
+            query += ' AND d.Cedula_Family IS NOT NULL'
+        elif filtro == 'ubicacion_admin':
+            query += ' AND data.Location_Admin IS NOT NULL'
+        elif filtro == 'manually':
+            query += ' AND data.Manually = 1'
+
+        query += ' ORDER BY data.ESTADOS ASC, data.Location_Physical ASC, data.Location_Admin ASC'
+
+        cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute(query, (fecha,))
         registros = cursor.fetchall()
         cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(Time_box) = %s', (fecha,))
         total_recibido = cursor.fetchone()['total_recibido']
         cursor.close()
 
+        # Generar el archivo Excel
         wb = Workbook()
         ws = wb.active
         ws.title = "Listado"

@@ -63,6 +63,14 @@
         border: 1px solid #181818;
         margin-right: 0.5em;
       }
+      .dateFiltros {
+        text-align: center;
+        padding: 0.5em;
+        border-radius: 5px;
+        width: fit-content;
+        border: 1px solid #181818;
+        margin-right: 0.5em;
+      }
       .form-fecha > button {
         padding: 0.5em;
         border-radius: 5px;
@@ -175,7 +183,17 @@
       >
         <label for="fecha">Fecha:</label>
         <input type="date" id="fecha" name="fecha" required />
-        <button type="submit">Generar Excel</button>
+
+        <label for="filtro">Seleccionar filtro:</label>
+        <select id="filtro" class="dateFiltros" name="filtro" required>
+          <option value="" disabled selected>Seleccione un filtro</option>
+          <option value="autorizados">Por Autorizados</option>
+          <option value="ubicacion_admin">Por ubicación administrativa</option>
+          <option value="manually">Por registro manual</option>
+          <option value="todos">Data general</option>
+        </select>
+
+        <button type="submit" class="ml-3">Generar Excel</button>
       </form>
       {% else %}
       <p>Fecha: <b>{{ fecha }}</b></p>
