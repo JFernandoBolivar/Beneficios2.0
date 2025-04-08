@@ -259,6 +259,27 @@ def consult():
                 faltan = total_personas - total_recibido
                 cursor.close()
                 return render_template('index.html',  super_admin=super_admin, data=data_exit, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
+            elif estatus == 10:
+                cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+                cursor.execute('SELECT COUNT(*) AS total_personas FROM data WHERE Estatus = 1')
+                total_personas = cursor.fetchone()['total_personas']
+                cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery d JOIN data ON d.Data_ID = data.ID WHERE d.Entregado = 1 AND data.Estatus = 1')
+                total_recibido = cursor.fetchone()['total_recibido']
+                total_alert = int(total_recibido)
+                # alert = None
+                # alert_limite = None
+                # if total_alert == 550:
+                #     alert = f"{total_alert} personas despachadas"
+                #     alert_limite = "Se acerca al limite de 600 "
+                # elif total_alert == 590:
+                #     alert = f"{total_alert} personas despachadas"
+                #     alert_limite = "Se acerca al limite de 600"
+                # elif total_alert == 600:
+                #     alert = f"{total_alert} personas despachadas"
+                #     alert_limite = "Ha alcanzado limite de 600"
+                faltan = total_personas - total_recibido
+                cursor.close()
+                return render_template('index.html',  super_admin=super_admin, data=data_exit, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
             
             elif estatus == 9:
                 cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -306,6 +327,15 @@ def consult():
                 cursor.execute('SELECT COUNT(*) AS total_personas FROM data WHERE Estatus = 2')
                 total_personas = cursor.fetchone()['total_personas']
                 cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery d JOIN data ON d.Data_ID = data.ID WHERE d.Entregado = 1 AND data.Estatus = 2 AND DATE(d.Time_box) = %s', (fecha,))
+            elif tipo_usuario == 'comision_servicios_alert':
+                cursor.execute('SELECT COUNT(*) AS total_personas FROM data WHERE Estatus = 9')
+                total_personas = cursor.fetchone()['total_personas']
+                cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery d JOIN data ON d.Data_ID = data.ID WHERE d.Entregado = 1 AND data.Estatus = 9')
+           
+            elif tipo_usuario == 'comision_servicios_2':
+                cursor.execute('SELECT COUNT(*) AS total_personas FROM data WHERE Estatus = 10')
+                total_personas = cursor.fetchone()['total_personas']
+                cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery d JOIN data ON d.Data_ID = data.ID WHERE d.Entregado = 1 AND data.Estatus = 10')
             else:
                 cursor.execute('SELECT COUNT(*) AS total_personas FROM data')
                 total_personas = cursor.fetchone()['total_personas']
@@ -789,6 +819,8 @@ def reporte():
         SELECT DATE(Time_box) as fecha,
                SUM(CASE WHEN data.Estatus = 1 THEN 1 ELSE 0 END) as total_activos,
                SUM(CASE WHEN data.Estatus = 2 THEN 1 ELSE 0 END) as total_pasivos,
+               SUM(CASE WHEN data.Estatus = 9 THEN 1 ELSE 0 END) as total_comision_vencida,
+               SUM(CASE WHEN data.Estatus = 10 THEN 1 ELSE 0 END) as total_comision_vigente,
                COUNT(*) as total_entregas
         FROM delivery
         JOIN data ON delivery.Data_ID = data.ID
@@ -796,15 +828,30 @@ def reporte():
         GROUP BY DATE(Time_box)
     ''')
     reportes = cursor.fetchall()
-    cursor.close()
-   
+
+    # Calcular totales generales
     total_entregas = sum(reporte['total_entregas'] for reporte in reportes)
-    
+    total_activos = sum(reporte['total_activos'] for reporte in reportes)
+    total_pasivos = sum(reporte['total_pasivos'] for reporte in reportes)
+    total_comision_vencida = sum(reporte['total_comision_vencida'] for reporte in reportes)
+    total_comision_vigente = sum(reporte['total_comision_vigente'] for reporte in reportes)
+
+    cursor.close()
+
+    # Formatear las fechas
     for reporte in reportes:
         fecha = reporte['fecha']
         reporte['fecha_formateada'] = format_date(fecha, format='full', locale='es_ES')
-    return render_template('reporte.html', reportes=reportes, total_entregas=total_entregas)
 
+    return render_template(
+        'reporte.html',
+        reportes=reportes,
+        total_entregas=total_entregas,
+        total_activos=total_activos,
+        total_pasivos=total_pasivos,
+        total_comision_vencida=total_comision_vencida,
+        total_comision_vigente=total_comision_vigente
+    )
 # GENERAR REPORTE DE ENTREGADOS EN PDF
 @app.route("/reporte_pdf", methods=["GET", "POST"])
 def reporte_pdf():
@@ -815,6 +862,8 @@ def reporte_pdf():
             SELECT DATE(Time_box) as fecha,
                    SUM(CASE WHEN data.Estatus = 1 THEN 1 ELSE 0 END) as total_activos,
                    SUM(CASE WHEN data.Estatus = 2 THEN 1 ELSE 0 END) as total_pasivos,
+                   SUM(CASE WHEN data.Estatus = 9 THEN 1 ELSE 0 END) as total_comision_vencida,
+                   SUM(CASE WHEN data.Estatus = 10 THEN 1 ELSE 0 END) as total_comision_vigente,
                    COUNT(*) as total_entregas
             FROM delivery
             JOIN data ON delivery.Data_ID = data.ID
@@ -827,6 +876,8 @@ def reporte_pdf():
             SELECT DATE(Time_box) as fecha,
                    SUM(CASE WHEN data.Estatus = 1 THEN 1 ELSE 0 END) as total_activos,
                    SUM(CASE WHEN data.Estatus = 2 THEN 1 ELSE 0 END) as total_pasivos,
+                   SUM(CASE WHEN data.Estatus = 9 THEN 1 ELSE 0 END) as total_comision_vencida,
+                   SUM(CASE WHEN data.Estatus = 10 THEN 1 ELSE 0 END) as total_comision_vigente,
                    COUNT(*) as total_entregas
             FROM delivery
             JOIN data ON delivery.Data_ID = data.ID
@@ -836,13 +887,27 @@ def reporte_pdf():
     reportes = cursor.fetchall()
     cursor.close()
     
+    # Calcular totales generales
     total_entregas = sum(reporte['total_entregas'] for reporte in reportes)
+    total_activos = sum(reporte['total_activos'] for reporte in reportes)
+    total_pasivos = sum(reporte['total_pasivos'] for reporte in reportes)
+    total_comision_vencida = sum(reporte['total_comision_vencida'] for reporte in reportes)
+    total_comision_vigente = sum(reporte['total_comision_vigente'] for reporte in reportes)
     
+    # Formatear las fechas
     for reporte in reportes:
         fecha = reporte['fecha']
         reporte['fecha_formateada'] = format_date(fecha, format='full', locale='es_ES')
     
-    rendered = render_template('reporte_pdf.html', reportes=reportes, total_entregas=total_entregas)
+    rendered = render_template(
+        'reporte_pdf.html',
+        reportes=reportes,
+        total_entregas=total_entregas,
+        total_activos=total_activos,
+        total_pasivos=total_pasivos,
+        total_comision_vencida=total_comision_vencida,
+        total_comision_vigente=total_comision_vigente
+    )
     pdf = HTML(string=rendered).write_pdf()
 
     response = make_response(pdf)
@@ -914,10 +979,16 @@ def listado_excel():
         '''
         if filtro == 'autorizados':
             query += ' AND d.Cedula_Family IS NOT NULL'
-        elif filtro == 'ubicacion_admin':
-            query += ' AND data.Location_Admin IS NOT NULL'
+        elif filtro == 'activo':
+            query += ' AND data.Estatus = 1'
+        elif filtro == 'pasivo':
+            query += ' AND data.Estatus = 2'
         elif filtro == 'manually':
             query += ' AND data.Manually = 1'
+        elif filtro == 'comision_vencida':
+            query += ' AND data.Estatus = 9'
+        elif filtro == 'comision_vigente':
+            query += ' AND data.Estatus = 10'
 
         query += ' ORDER BY data.ESTADOS ASC, data.Location_Physical ASC, data.Location_Admin ASC'
 
@@ -970,12 +1041,12 @@ def listado_excel():
             staff_name = cursor.fetchone()['Name_Com']
             cursor.close()
 
-            estatus = "Activo" if registro['Estatus'] == 1 else "Pasivo"
+            estatus = "Activo" if registro['Estatus'] == 1 else "Pasivo" if registro['Estatus'] == 2 else "Comisión Vencida" if registro['Estatus'] == 9 else "Comisión Vigente"
             row = [
                 idx,
                 registro['Cedula'],
                 registro['Name_Com'],
-                registro['ESTADOS'] if registro['Estatus'] == 2 else "",
+                registro['ESTADOS'] if registro['Estatus'] in [2, 9, 10] else "",
                 estatus,
                 registro['Location_Physical'] if registro['Estatus'] == 1 else "",
                 registro['Location_Admin'] if registro['Estatus'] == 1 else "",
@@ -1024,7 +1095,6 @@ def listado_excel():
 
         return send_file(output, download_name="listado.xlsx", as_attachment=True)
     return render_template('tabla_pdf.html')
-
 # GENERAR LISTADO DE NO ENTREGADOS 
 @app.route("/listado_no_registrado")
 def listado_no_registrado():

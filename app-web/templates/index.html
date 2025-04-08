@@ -116,12 +116,15 @@
         class="form-control"
         value="{{ fecha }}"
       />
-      <label for="tipo_usuario" class="estatusLabel">Estatus:</label>
-      <select id="tipo_usuario" name="tipo_usuario" class="form-control estatusSelect">
-        <option value="general" {% if tipo_usuario == 'general' %}selected{% endif %}>General</option>
-        <option value="activos" {% if tipo_usuario == 'activos' %}selected{% endif %}>Activos</option>
-        <option value="pasivos" {% if tipo_usuario == 'pasivos' %}selected{% endif %}>Pasivos</option>
-      </select>
+     
+    <label for="tipo_usuario" class="estatusLabel">Estatus:</label>
+<select id="tipo_usuario" name="tipo_usuario" class="form-control estatusSelect">
+  <option value="general" {% if tipo_usuario == 'general' %}selected{% endif %}>General</option>
+  <option value="activos" {% if tipo_usuario == 'activos' %}selected{% endif %}>Activos</option>
+  <option value="pasivos" {% if tipo_usuario == 'pasivos' %}selected{% endif %}>Pasivos</option>
+  <option value="comision_servicios_alert" {% if tipo_usuario == 'comision_servicios_alert' %}selected{% endif %}>C.S Vencido</option>
+  <option value="comision_servicios_2" {% if tipo_usuario == 'comision_servicios_2' %}selected{% endif %}>C.S</option>
+</select>
       <button type="submit" class="btn btn-dark">Filtrar</button>
     </form>
     {% endif %}

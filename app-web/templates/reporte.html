@@ -13,30 +13,36 @@
     ></a>
   </div>
   <h1 class="fs-3 mt-3">Reporte de Beneficios</h1>
-  <section
-    class="datos table-responsive"   id="tabla1"
-  >
+  <section class="datos table-responsive" id="tabla1">
     <table class="table table-striped table-bordered">
       <thead class="table-dark">
         <tr>
           <th scope="col">Fecha</th>
           <th scope="col">Total Activos</th>
           <th scope="col">Total Pasivos</th>
+          <th scope="col">Total Comisión Vencida</th>
+          <th scope="col">Total Comisión Vigente</th>
           <th scope="col">Total Entregas</th>
         </tr>
       </thead>
+
       <tbody>
         {% for reporte in reportes %}
         <tr>
           <td>{{ reporte.fecha_formateada }}</td>
           <td>{{ reporte.total_activos }}</td>
           <td>{{ reporte.total_pasivos }}</td>
+          <td>{{ reporte.total_comision_vencida }}</td>
+          <td>{{ reporte.total_comision_vigente }}</td>
           <td>{{ reporte.total_entregas }}</td>
         </tr>
         {% endfor %}
         <tr>
           <td><strong>Total General</strong></td>
-          <td colspan="2"></td>
+          <td><strong>{{ total_activos }}</strong></td>
+          <td><strong>{{ total_pasivos }}</strong></td>
+          <td><strong>{{ total_comision_vencida }}</strong></td>
+          <td><strong>{{ total_comision_vigente }}</strong></td>
           <td><strong>{{ total_entregas }}</strong></td>
         </tr>
       </tbody>
