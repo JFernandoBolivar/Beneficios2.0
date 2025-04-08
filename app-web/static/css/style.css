@@ -113,6 +113,7 @@ body {
   /* display: flex; */
   justify-content: space-between;
   align-items: center;
+  z-index: 100;
 }
 .limite > .icons {
   color: #f80a0a;

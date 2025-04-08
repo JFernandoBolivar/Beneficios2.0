@@ -19,7 +19,7 @@ app.config['SECRET_KEY'] = '3054=HitM'
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'user623'
-app.config['MYSQL_DB'] = 'data_final'
+app.config['MYSQL_DB'] = 'data_abrir_definitiva'
 MySQL = MySQL(app)
 # app.config['SESSION_TYPE'] = 'filesystem' 
 # app.config['SESSION_PERMANENT'] = False
@@ -217,21 +217,21 @@ def consult():
                 total_personas = cursor.fetchone()['total_personas']
                 cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery d JOIN data ON d.Data_ID = data.ID WHERE d.Entregado = 1 AND data.Estatus = 2')
                 total_recibido = cursor.fetchone()['total_recibido']
-                total_alert = int(total_recibido)
-                alert = None
-                alert_limite = None
-                if total_alert == 550:
-                    alert = f"{total_alert} personas despachadas"
-                    alert_limite = "Se acerca al limite de 600 "
-                elif total_alert == 590:
-                    alert = f"{total_alert} personas despachadas"
-                    alert_limite = "Se acerca al limite de 600"
-                elif total_alert == 600:
-                    alert = f"{total_alert} personas despachadas"
-                    alert_limite = "Ha alcanzado limite de 600"
+                # total_alert = int(total_recibido)
+                # alert = None
+                # alert_limite = None
+                # if total_alert == 550:
+                #     alert = f"{total_alert} personas despachadas"
+                #     alert_limite = "Se acerca al limite de 600 "
+                # elif total_alert == 590:
+                #     alert = f"{total_alert} personas despachadas"
+                #     alert_limite = "Se acerca al limite de 600"
+                # elif total_alert == 600:
+                #     alert = f"{total_alert} personas despachadas"
+                #     alert_limite = "Ha alcanzado limite de 600"
                 faltan = total_personas - total_recibido
                 cursor.close()
-                return render_template('index.html', alert_limite=alert_limite, super_admin=super_admin, data=data_exit, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan, alert=alert)
+                return render_template('index.html', super_admin=super_admin, data=data_exit, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
             elif estatus == 6:
                 mensaje = "Personal Fallecido"
                 return render_template('index.html', super_admin=super_admin, mensaje=mensaje, cedula=cedula)
@@ -245,20 +245,43 @@ def consult():
                 cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery d JOIN data ON d.Data_ID = data.ID WHERE d.Entregado = 1 AND data.Estatus = 1')
                 total_recibido = cursor.fetchone()['total_recibido']
                 total_alert = int(total_recibido)
-                alert = None
-                alert_limite = None
-                if total_alert == 550:
-                    alert = f"{total_alert} personas despachadas"
-                    alert_limite = "Se acerca al limite de 600 "
-                elif total_alert == 590:
-                    alert = f"{total_alert} personas despachadas"
-                    alert_limite = "Se acerca al limite de 600"
-                elif total_alert == 600:
-                    alert = f"{total_alert} personas despachadas"
-                    alert_limite = "Ha alcanzado limite de 600"
+                # alert = None
+                # alert_limite = None
+                # if total_alert == 550:
+                #     alert = f"{total_alert} personas despachadas"
+                #     alert_limite = "Se acerca al limite de 600 "
+                # elif total_alert == 590:
+                #     alert = f"{total_alert} personas despachadas"
+                #     alert_limite = "Se acerca al limite de 600"
+                # elif total_alert == 600:
+                #     alert = f"{total_alert} personas despachadas"
+                #     alert_limite = "Ha alcanzado limite de 600"
                 faltan = total_personas - total_recibido
                 cursor.close()
-                return render_template('index.html', alert_limite=alert_limite, super_admin=super_admin, data=data_exit, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan, alert=alert)
+                return render_template('index.html',  super_admin=super_admin, data=data_exit, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
+            
+            elif estatus == 9:
+                cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+                cursor.execute('SELECT COUNT(*) AS total_personas FROM data WHERE Estatus = 2')
+                total_personas = cursor.fetchone()['total_personas']
+                cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery d JOIN data ON d.Data_ID = data.ID WHERE d.Entregado = 1 AND data.Estatus = 2')
+                total_recibido = cursor.fetchone()['total_recibido']
+                # total_alert = int(total_recibido)
+                # alert = None
+                # alert_limite = None
+                # if total_alert == 550:
+                #     alert = f"{total_alert} personas despachadas"
+                #     alert_limite = "Se acerca al limite de 600 "
+                # elif total_alert == 590:
+                #     alert = f"{total_alert} personas despachadas"
+                #     alert_limite = "Se acerca al limite de 600"
+                # elif total_alert == 600:
+                #     alert = f"{total_alert} personas despachadas"
+                #     alert_limite = "Ha alcanzado limite de 600"
+                faltan = total_personas - total_recibido
+                cursor.close()
+                return render_template('index.html', super_admin=super_admin, data=data_exit, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
+            
             else:
                 mensaje = "Estatus no permitido para retirar"
                 mensaje2 = 'Comunicarse con el administrador'
@@ -337,38 +360,7 @@ def registrar():
         cursor.close()
         return render_template('index.html', mensaje=mensaje, cedula=cedula, mensaje2="Por favor, verifique la cédula ingresada.", total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
 
-    cursor.execute('SELECT Entregado FROM delivery WHERE Data_ID = %s', (data_exit['ID'],))
-    delivery_exit = cursor.fetchone()
-    
-    if delivery_exit and delivery_exit['Entregado'] == 1:
-        cursor.close()
-        mensaje = "El número de cédula ya se encuentra marcado como entregado."
-        cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT COUNT(*) AS total_personas FROM data')
-        total_personas = cursor.fetchone()['total_personas']
-     
-        cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(Time_box) = %s', (fecha,))
-        total_recibido = cursor.fetchone()['total_recibido']
-        faltan = total_personas - total_recibido
-        cursor.close()
-        return render_template('index.html', mensaje=mensaje, cedula=cedula, mensaje2="No es posible registrar nuevamente.", total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
-
-    # Verificar si la cédula del familiar ya está registrada en la columna Cedula_Family
-    if CIFamily:
-        cursor.execute('SELECT * FROM delivery WHERE Cedula_Family = %s', (CIFamily,))
-        family_exit = cursor.fetchone()
-        if family_exit:
-            cursor.close()
-            mensaje = "La cédula del Autorizado ya se encuentra registrada."
-            cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
-            cursor.execute('SELECT COUNT(*) AS total_personas FROM data')
-            total_personas = cursor.fetchone()['total_personas']
-            cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(Time_box) = %s', (fecha,))
-            total_recibido = cursor.fetchone()['total_recibido']
-            faltan = total_personas - total_recibido
-            cursor.close()
-            return render_template('index.html', mensaje=mensaje, cedula=cedula, mensaje2="Por favor, verifique la cédula del Autorizado.", error_familiar=True, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
-
+    # Registro exitoso
     observacion = request.form.get('observacion', '').upper()
     nameFamily = request.form.get('nombrefamiliar', None).upper() if request.form.get('nombrefamiliar', None) else None
     CIFamily = CIFamily.upper() if CIFamily else None
@@ -381,17 +373,23 @@ def registrar():
     if data_exit['Cedula']:
         cursor.execute('INSERT INTO user_history (cedula, user, action, time_login) VALUES (%s, %s, %s, %s)', (session['cedula'], session['username'], 'Marco Como Entregado el Beneficio Alimenticio de {0}'.format(data_exit['Cedula']), session['time_login']))
     MySQL.connection.commit()
-    cursor.close()
     
     mensaje = "Registro exitoso."
-    cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+    mensaje2 = "El registro se ha completado correctamente."
+    
+    # Verificar si el estatus es igual a 9
+    if data_exit['Estatus'] == 9:
+        mensaje = "Comisión vencida"
+        mensaje2 = "Recibirá el beneficio pero debe renovar para la próxima entrega"
+    
     cursor.execute('SELECT COUNT(*) AS total_personas FROM data')
     total_personas = cursor.fetchone()['total_personas']
     cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(Time_box) = %s', (fecha,))
     total_recibido = cursor.fetchone()['total_recibido']
     faltan = total_personas - total_recibido
     cursor.close()
-    return render_template('index.html', mensaje=mensaje, cedula=cedula, mensaje2="El registro se ha completado correctamente.", total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
+    
+    return render_template('index.html', mensaje=mensaje, cedula=cedula, mensaje2=mensaje2, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
 
 #CONTEO DE ENTREGAS POR USUARIO
 
