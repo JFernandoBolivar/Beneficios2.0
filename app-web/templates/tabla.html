@@ -60,7 +60,10 @@
             {{registro.Location_Admin if registro.Location_Admin else " "}}
           </td>
           <td>{{registro.ESTADOS if registro.ESTADOS else " " }}</td>
-          <td>{{"Pasivo" if registro.Estatus == 2 else "Activo" }}</td>
+          <td>
+            {% if registro.Estatus == 2 %} Pasivo {% elif registro.Estatus in
+            [10, 11] %} Comisión de Servicio {% else %} Activo {% endif %}
+          </td>
 
           <td>{{ registro.Time_box }}</td>
           <td>

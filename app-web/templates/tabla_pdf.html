@@ -236,7 +236,11 @@
               <td>{{ registro.Name_Com }}</td>
               {% if registro.Estatus == 2 %}
               <td>{{ registro.ESTADOS }}</td>
-              <td>{{"Pasivo" if registro.Estatus == 2 else "Activo" }}</td>
+              <td>
+                {% if registro.Estatus == 2 %} Pasivo {% elif registro.Estatus
+                in [10, 11] %} Comisión de Servicio {% else %} Activo {% endif
+                %}
+              </td>
               {% else %}
               <td>{{ registro.Location_Physical }}</td>
               <td>{{ registro.Location_Admin }}</td>

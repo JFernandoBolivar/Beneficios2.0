@@ -60,8 +60,13 @@
             %} Pasivo {% elif registro.Estatus == 3 or registro.Estatus == 4 %}
             Suspendido {% elif registro.Estatus == 5 %} Fuera del país {% elif
             registro.Estatus == 6 %} Fallecido {% elif registro.Estatus == 7 or
-            registro.Estatus == 8 %} Se requiere verificar {% else %}
+            registro.Estatus == 8 %} Se requiere verificar {% elif registro.Estatus in
+            [10, 11] %} Comisión de Servicio {% else %} Activo {% else %}
             Desconocido {% endif %}
+              <td>
+            {% if registro.Estatus == 2 %} Pasivo {% elif registro.Estatus in
+            [10, 11] %} Comisión de Servicio {% else %} Activo {% endif %}
+          </td>
           </td>
           {% else %}
         </tr>

@@ -19,12 +19,13 @@ app.config['SECRET_KEY'] = '3054=HitM'
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'user623'
-app.config['MYSQL_DB'] = 'data_abrir_definitiva'
+app.config['MYSQL_DB'] = 'data_abrir'
 MySQL = MySQL(app)
 # app.config['SESSION_TYPE'] = 'filesystem' 
 # app.config['SESSION_PERMANENT'] = False
 # app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=5)  
 # Session(app)
+# from flask_session import Session
 
 @app.route('/static/<path:filename>')
 def static_files(filename):
@@ -281,27 +282,20 @@ def consult():
                 cursor.close()
                 return render_template('index.html',  super_admin=super_admin, data=data_exit, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
             
-            elif estatus == 9:
+            elif estatus == 11:
                 cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
-                cursor.execute('SELECT COUNT(*) AS total_personas FROM data WHERE Estatus = 2')
+                cursor.execute('SELECT COUNT(*) AS total_personas FROM data WHERE Estatus = 1')
                 total_personas = cursor.fetchone()['total_personas']
-                cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery d JOIN data ON d.Data_ID = data.ID WHERE d.Entregado = 1 AND data.Estatus = 2')
+                cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery d JOIN data ON d.Data_ID = data.ID WHERE d.Entregado = 1 AND data.Estatus = 1')
                 total_recibido = cursor.fetchone()['total_recibido']
-                # total_alert = int(total_recibido)
-                # alert = None
-                # alert_limite = None
-                # if total_alert == 550:
-                #     alert = f"{total_alert} personas despachadas"
-                #     alert_limite = "Se acerca al limite de 600 "
-                # elif total_alert == 590:
-                #     alert = f"{total_alert} personas despachadas"
-                #     alert_limite = "Se acerca al limite de 600"
-                # elif total_alert == 600:
-                #     alert = f"{total_alert} personas despachadas"
-                #     alert_limite = "Ha alcanzado limite de 600"
                 faltan = total_personas - total_recibido
                 cursor.close()
-                return render_template('index.html', super_admin=super_admin, data=data_exit, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
+                return render_template('index.html',  super_admin=super_admin, data=data_exit, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
+            
+            elif estatus == 9:
+                 mensaje = "Comisión vencida"
+                 mensaje2 = 'Comunicarse con el Supervisor o administrador'
+                 return render_template('index.html', super_admin=super_admin, mensaje=mensaje, mensaje2=mensaje2,cedula=cedula, mostrar_boton=True)
             
             else:
                 mensaje = "Estatus no permitido para retirar"
@@ -327,10 +321,11 @@ def consult():
                 cursor.execute('SELECT COUNT(*) AS total_personas FROM data WHERE Estatus = 2')
                 total_personas = cursor.fetchone()['total_personas']
                 cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery d JOIN data ON d.Data_ID = data.ID WHERE d.Entregado = 1 AND data.Estatus = 2 AND DATE(d.Time_box) = %s', (fecha,))
+           
             elif tipo_usuario == 'comision_servicios_alert':
-                cursor.execute('SELECT COUNT(*) AS total_personas FROM data WHERE Estatus = 9')
+                cursor.execute('SELECT COUNT(*) AS total_personas FROM data WHERE Estatus IN (9, 11)')
                 total_personas = cursor.fetchone()['total_personas']
-                cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery d JOIN data ON d.Data_ID = data.ID WHERE d.Entregado = 1 AND data.Estatus = 9')
+                cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery d JOIN data ON d.Data_ID = data.ID WHERE d.Entregado = 1 AND data.Estatus IN (9, 11) ')
            
             elif tipo_usuario == 'comision_servicios_2':
                 cursor.execute('SELECT COUNT(*) AS total_personas FROM data WHERE Estatus = 10')
@@ -357,6 +352,37 @@ def consult():
         faltan = total_personas - total_recibido
         cursor.close()
     return render_template('index.html', super_admin=super_admin, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan, fecha=fecha, tipo_usuario=tipo_usuario)
+
+
+# estatus de comicion vencida
+@app.route("/cambiar_estatusComision", methods=["POST"])
+def cambiar_estatusComision():
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
+    
+    cedula = request.form.get('cedula')
+    cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+    
+    try:
+        # Actualizar el estatus a 11
+        cursor.execute('UPDATE data SET Estatus = 11 WHERE Cedula = %s AND Estatus = 9', (cedula,))
+        MySQL.connection.commit()
+        
+        # Registrar el cambio en el historial
+        cursor.execute('INSERT INTO user_history (cedula, user, action, time_login) VALUES (%s, %s, %s, %s)', 
+                       (session['cedula'], session['username'], f'Cambio de estatus de la cédula {cedula} de 9 a 11', datetime.now()))
+        MySQL.connection.commit()
+        
+        mensaje = "Estatus cambiado exitosamente."
+    except Exception as e:
+        MySQL.connection.rollback()
+        mensaje = f"Error al cambiar el estatus: {str(e)}"
+    finally:
+        cursor.close()
+    
+    return redirect(url_for('consult', mensaje=mensaje))
+
+# .................
 
 # entrega de beneficio
 @app.route("/registrar", methods=["POST"])
@@ -407,11 +433,7 @@ def registrar():
     mensaje = "Registro exitoso."
     mensaje2 = "El registro se ha completado correctamente."
     
-    # Verificar si el estatus es igual a 9
-    if data_exit['Estatus'] == 9:
-        mensaje = "Comisión vencida"
-        mensaje2 = "Recibirá el beneficio pero debe renovar para la próxima entrega"
-    
+  
     cursor.execute('SELECT COUNT(*) AS total_personas FROM data')
     total_personas = cursor.fetchone()['total_personas']
     cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(Time_box) = %s', (fecha,))
@@ -819,7 +841,7 @@ def reporte():
         SELECT DATE(Time_box) as fecha,
                SUM(CASE WHEN data.Estatus = 1 THEN 1 ELSE 0 END) as total_activos,
                SUM(CASE WHEN data.Estatus = 2 THEN 1 ELSE 0 END) as total_pasivos,
-               SUM(CASE WHEN data.Estatus = 9 THEN 1 ELSE 0 END) as total_comision_vencida,
+               SUM(CASE WHEN data.Estatus  IN (9, 11)  THEN 1 ELSE 0 END) as total_comision_vencida,
                SUM(CASE WHEN data.Estatus = 10 THEN 1 ELSE 0 END) as total_comision_vigente,
                COUNT(*) as total_entregas
         FROM delivery
@@ -862,7 +884,7 @@ def reporte_pdf():
             SELECT DATE(Time_box) as fecha,
                    SUM(CASE WHEN data.Estatus = 1 THEN 1 ELSE 0 END) as total_activos,
                    SUM(CASE WHEN data.Estatus = 2 THEN 1 ELSE 0 END) as total_pasivos,
-                   SUM(CASE WHEN data.Estatus = 9 THEN 1 ELSE 0 END) as total_comision_vencida,
+                   SUM(CASE WHEN data.Estatus IN (9, 11) THEN 1 ELSE 0 END) as total_comision_vencida,
                    SUM(CASE WHEN data.Estatus = 10 THEN 1 ELSE 0 END) as total_comision_vigente,
                    COUNT(*) as total_entregas
             FROM delivery
@@ -876,7 +898,7 @@ def reporte_pdf():
             SELECT DATE(Time_box) as fecha,
                    SUM(CASE WHEN data.Estatus = 1 THEN 1 ELSE 0 END) as total_activos,
                    SUM(CASE WHEN data.Estatus = 2 THEN 1 ELSE 0 END) as total_pasivos,
-                   SUM(CASE WHEN data.Estatus = 9 THEN 1 ELSE 0 END) as total_comision_vencida,
+                   SUM(CASE WHEN data.Estatus IN (9, 11) THEN 1 ELSE 0 END) as total_comision_vencida,
                    SUM(CASE WHEN data.Estatus = 10 THEN 1 ELSE 0 END) as total_comision_vigente,
                    COUNT(*) as total_entregas
             FROM delivery
@@ -986,7 +1008,7 @@ def listado_excel():
         elif filtro == 'manually':
             query += ' AND data.Manually = 1'
         elif filtro == 'comision_vencida':
-            query += ' AND data.Estatus = 9'
+            query += ' AND data.Estatus IN (9, 11)'
         elif filtro == 'comision_vigente':
             query += ' AND data.Estatus = 10'
 
@@ -1041,7 +1063,7 @@ def listado_excel():
             staff_name = cursor.fetchone()['Name_Com']
             cursor.close()
 
-            estatus = "Activo" if registro['Estatus'] == 1 else "Pasivo" if registro['Estatus'] == 2 else "Comisión Vencida" if registro['Estatus'] == 9 else "Comisión Vigente"
+            estatus = "Activo" if registro['Estatus'] == 1 else "Pasivo" if registro['Estatus'] == 2 else "Comisión Vencida" if registro['Estatus'] == 9  else "Comisión Vencida" if registro['Estatus'] == 11 else "Comisión Vigente"
             row = [
                 idx,
                 registro['Cedula'],

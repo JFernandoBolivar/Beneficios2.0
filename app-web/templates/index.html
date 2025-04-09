@@ -31,6 +31,13 @@
   <h2>{{ mensaje }}</h2>
   <h4>{{ cedula }}</h4>
   <p>{{ mensaje2 }}</p>
+  
+  {% if mostrar_boton %}
+  <form action="{{ url_for('cambiar_estatusComision') }}" method="POST">
+    <input type="hidden" name="cedula" value="{{ cedula }}">
+    <button type="submit" class="btn btn-danger">Permitir entrega</button>
+  </form>
+  {% endif %}
 </div>
 {% endif %} {% if data %}
 <div class="container_tablas">
@@ -63,7 +70,15 @@
             <td>{{data.Location_Physical if  data.Location_Physical else " " }}</td>
             <td>{{data.Location_Admin if  data.Location_Admin else " " }}</td>
             {% endif %}
-            <td>{{"Pasivo" if data.Estatus == 2 else "Activo" }}</td>
+            <td>
+             {% if data.Estatus == 2 %}
+             Pasivo
+             {% elif data.Estatus in [10, 11] %}
+             Comisión de Servicio
+             {% else %}
+               Activo
+             {% endif %}
+            </td>
             <td>
               {{ data.Observation if data.Observation else 'sin observaciones'
               }}
