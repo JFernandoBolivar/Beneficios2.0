@@ -84,6 +84,17 @@
           class="hrr"
         />
       </div>
+      <form method="GET" action="{{ url_for('listado_no_regist_pdf') }}">
+    <label for="filtro">Filtrar por:</label>
+    <select name="filtro" id="filtro">
+        <option value="todos" {% if filtro == 'todos' %}selected{% endif %}>Todos</option>
+        <option value="activos" {% if filtro == 'activos' %}selected{% endif %}>Activos</option>
+        <option value="pasivos" {% if filtro == 'pasivos' %}selected{% endif %}>Pasivos</option>
+        <option value="comision_vigente" {% if filtro == 'comision_vigente' %}selected{% endif %}>Comisión de Servicio Vigente</option>
+        <option value="comision_vencida" {% if filtro == 'comision_vencida' %}selected{% endif %}>Comisión de Servicio Vencida</option>
+    </select>
+    <button type="submit">Aplicar Filtro</button>
+</form>
       <h1 class="list">Listado de Personas que no han Recibido la Caja</h1>
       <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
         <table class="table table-striped table-bordered m-auto">
@@ -115,13 +126,15 @@
             {{registro.Location_Admin if registro.Location_Admin else " "}}
           </td>
              <td>{{registro.ESTADOS if registro.ESTADOS else " " }}</td>
-             <td>
+              <td>
             {% if registro.Estatus == 1 %} Activo {% elif registro.Estatus == 2
             %} Pasivo {% elif registro.Estatus == 3 or registro.Estatus == 4 %}
             Suspendido {% elif registro.Estatus == 5 %} Fuera del país {% elif
             registro.Estatus == 6 %} Fallecido {% elif registro.Estatus == 7 or
-            registro.Estatus == 8 %} Se requiere verificar {% else %}
-            Desconocido {% endif %}
+            registro.Estatus == 8 %} Se requiere verificar {% elif
+            registro.Estatus == 10 %} Comisión de Servicio Vigente{% elif
+            registro.Estatus in [9,11] %} Comisión de Servicio Vencida {% else
+            %} Desconocido {% endif %}
           </td>
           {% else %}
             </tr>
@@ -129,7 +142,7 @@
           </tbody>
         </table>
       </div>
-      <p class="Nros">Total:<b>{{total_personas}}</b></p>
+      <p class="Nros">Total:<b>{{total_no_entregados}}</b></p>
     </div>
   </body>
 </html>

@@ -61,8 +61,9 @@
           </td>
           <td>{{registro.ESTADOS if registro.ESTADOS else " " }}</td>
           <td>
-            {% if registro.Estatus == 2 %} Pasivo {% elif registro.Estatus in
-            [10, 11] %} Comisión de Servicio {% else %} Activo {% endif %}
+            {% if registro.Estatus == 2 %} Pasivo {% elif registro.Estatus == 10
+            %} Comisión de Servicio Vigente {% elif registro.Estatus in [9, 11]
+            %} Comisión de Servicio Vencida {% else %} Activo {% endif %}
           </td>
 
           <td>{{ registro.Time_box }}</td>

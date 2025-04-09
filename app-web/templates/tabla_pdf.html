@@ -238,8 +238,9 @@
               <td>{{ registro.ESTADOS }}</td>
               <td>
                 {% if registro.Estatus == 2 %} Pasivo {% elif registro.Estatus
-                in [10, 11] %} Comisión de Servicio {% else %} Activo {% endif
-                %}
+                == 10 %} Comisión de Servicio Vigente {% elif registro.Estatus
+                in [9, 11] %} Comisión de Servicio Vencida {% else %} Activo {%
+                endif %}
               </td>
               {% else %}
               <td>{{ registro.Location_Physical }}</td>

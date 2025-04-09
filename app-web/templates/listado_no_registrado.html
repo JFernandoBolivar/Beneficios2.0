@@ -6,7 +6,7 @@
     </button>
 
     <a
-      href="{{ url_for('listado_no_regist_pdf') }}"
+      href="{{ url_for('listado_no_registrado_excel') }}"
       class="btn btn-primary"
       target="_blank"
       id="downloadPDF1"
@@ -60,13 +60,10 @@
             %} Pasivo {% elif registro.Estatus == 3 or registro.Estatus == 4 %}
             Suspendido {% elif registro.Estatus == 5 %} Fuera del país {% elif
             registro.Estatus == 6 %} Fallecido {% elif registro.Estatus == 7 or
-            registro.Estatus == 8 %} Se requiere verificar {% elif registro.Estatus in
-            [10, 11] %} Comisión de Servicio {% else %} Activo {% else %}
-            Desconocido {% endif %}
-              <td>
-            {% if registro.Estatus == 2 %} Pasivo {% elif registro.Estatus in
-            [10, 11] %} Comisión de Servicio {% else %} Activo {% endif %}
-          </td>
+            registro.Estatus == 8 %} Se requiere verificar {% elif
+            registro.Estatus == 10 %} Comisión de Servicio Vigente{% elif
+            registro.Estatus in [9,11] %} Comisión de Servicio Vencida {% else
+            %} Desconocido {% endif %}
           </td>
           {% else %}
         </tr>
@@ -75,7 +72,7 @@
     </table>
   </div>
   <div class="skp_tabla">
-    <p class="Nros">Total:<b>{{ total_personas }}</b></p>
+    <p class="Nros">Total:<b>{{ total_no_entregados }}</b></p>
 
     <button id="next2" class="next_tabla">
       <label class="next">Entregadas</label>

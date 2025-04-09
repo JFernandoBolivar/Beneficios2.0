@@ -1117,6 +1117,7 @@ def listado_excel():
 
         return send_file(output, download_name="listado.xlsx", as_attachment=True)
     return render_template('tabla_pdf.html')
+
 # GENERAR LISTADO DE NO ENTREGADOS 
 @app.route("/listado_no_registrado")
 def listado_no_registrado():
@@ -1130,33 +1131,156 @@ def listado_no_registrado():
         WHERE delivery.Entregado IS NULL OR delivery.Entregado = 0
     ''')
     registros = cursor.fetchall()
-    cursor.execute('SELECT COUNT(*) AS total_personas FROM data')
-    total_personas = cursor.fetchone()['total_personas']
-    cursor.close()
-    return render_template('listado_no_registrado.html', registros=registros, total_personas=total_personas)
-
-# GENERAR LISTADO DE NO ENTREGADOS EN PDF
-@app.route("/listado_no_regist_pdf")
-def listado_no_regist_pdf():
-    cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute('''
-        SELECT data.Cedula, data.Name_Com, data.Location_Physical,data.Location_Admin,data.Code, data.Estatus,data.ESTADOS delivery.Entregado
+        SELECT COUNT(*) AS total_no_entregados
         FROM data
         LEFT JOIN delivery ON data.ID = delivery.Data_ID
         WHERE delivery.Entregado IS NULL OR delivery.Entregado = 0
     ''')
+    total_no_entregados = cursor.fetchone()['total_no_entregados']
+    cursor.close()
+    return render_template('listado_no_registrado.html', registros=registros, total_no_entregados=total_no_entregados)
+
+# GENERAR LISTADO DE NO ENTREGADOS EN PDF
+@app.route("/listado_no_regist_pdf", methods=["GET", "POST"])
+def listado_no_regist_pdf():
+    filtro = request.args.get('filtro', 'todos')  # Obtiene el filtro desde la URL (por defecto "todos")
+    cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+    
+    # Construir la consulta SQL dinámicamente según el filtro
+    query = '''
+        SELECT data.Cedula, data.Name_Com, data.Location_Physical, data.Location_Admin, data.Code, data.Estatus, data.ESTADOS, delivery.Entregado
+        FROM data
+        LEFT JOIN delivery ON data.ID = delivery.Data_ID
+        WHERE delivery.Entregado IS NULL OR delivery.Entregado = 0
+    '''
+    if filtro == 'activos':
+        query += ' AND data.Estatus = 1'
+    elif filtro == 'pasivos':
+        query += ' AND data.Estatus = 2'
+    elif filtro == 'comision_vigente':
+        query += ' AND data.Estatus = 10'
+    elif filtro == 'comision_vencida':
+        query += ' AND data.Estatus IN (9, 11)'
+    
+    cursor.execute(query)
     registros = cursor.fetchall()
-    cursor.execute('SELECT COUNT(*) AS total_personas FROM data')
-    total_personas = cursor.fetchone()['total_personas']
+    
+    # Contar el total de registros según el filtro
+    cursor.execute(f'''
+        SELECT COUNT(*) AS total_no_entregados
+        FROM data
+        LEFT JOIN delivery ON data.ID = delivery.Data_ID
+        WHERE delivery.Entregado IS NULL OR delivery.Entregado = 0
+        {'AND data.Estatus = 1' if filtro == 'activos' else ''}
+        {'AND data.Estatus = 2' if filtro == 'pasivos' else ''}
+        {'AND data.Estatus = 10' if filtro == 'comision_vigente' else ''}
+        {'AND data.Estatus IN (9, 11)' if filtro == 'comision_vencida' else ''}
+    ''')
+    total_no_entregados = cursor.fetchone()['total_no_entregados']
     cursor.close()
     
-    rendered = render_template('tabla_no_regist_pdf.html', registros=registros,total_personas=total_personas)
+    rendered = render_template('tabla_no_regist_pdf.html', registros=registros, total_no_entregados=total_no_entregados, filtro=filtro)
     pdf = HTML(string=rendered).write_pdf()
 
     response = make_response(pdf)
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = 'inline; filename=listado.pdf'
     return response
+# Generar listado de no entregado en excel
+@app.route("/listado_no_registrado_excel", methods=["GET", "POST"])
+def listado_no_registrado_excel():
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
+    
+    cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('''
+        SELECT data.Cedula, data.Name_Com, data.Location_Physical, data.Location_Admin, data.Code, data.Estatus, data.ESTADOS, delivery.Entregado
+        FROM data
+        LEFT JOIN delivery ON data.ID = delivery.Data_ID
+        WHERE delivery.Entregado IS NULL OR delivery.Entregado = 0
+    ''')
+    registros = cursor.fetchall()
+    cursor.close()
+
+    # Generar el archivo Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "No Entregados"
+
+    # Agregar imágenes
+    img1_path = os.path.join(app.root_path, 'static/css/img/logo.png')
+    img2_path = os.path.join(app.root_path, 'static/css/img/logo2.png')
+    img1 = Image(img1_path)
+    img2 = Image(img2_path)
+    img1.width, img1.height = 60, 60
+    img2.width, img2.height = 60, 60
+    ws.add_image(img1, 'A1')
+
+    headers = ["#", "Cédula", "Nombre Completo", "Unidad Física", "Ubicación Administrativa", "Código", "Estatus", "Estado", "Entregado"]
+    last_column = chr(64 + len(headers))
+    img2.anchor = f'{last_column}1'
+    ws.add_image(img2)
+
+    ws.row_dimensions[1].height = 55
+    ws.merge_cells(f'A1:{last_column}1')
+    ws['A1'] = "Listado de Personas que No han Recibido la Caja"
+    ws['A1'].font = Font(size=14, bold=True)
+    ws['A1'].alignment = Alignment(horizontal="center", vertical="center")
+
+    # Encabezados
+    ws.append(headers)
+    header_fill = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")
+    for cell in ws[2]:
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+        cell.fill = header_fill
+
+    ws.row_dimensions[2].height = 30
+
+    # Agregar los datos
+    for idx, registro in enumerate(registros, start=1):
+        estatus = "Activo" if registro['Estatus'] == 1 else "Pasivo" if registro['Estatus'] == 2 else "Comisión Vencida" if registro['Estatus'] in [9, 11] else "Comisión Vigente" if registro['Estatus'] == 10 else "Desconocido"
+        row = [
+            idx,
+            registro['Cedula'],
+            registro['Name_Com'],
+            registro['Location_Physical'],
+            registro['Location_Admin'],
+            registro['Code'],
+            estatus,
+            registro['ESTADOS'],
+            "No" if registro['Entregado'] == 0 or registro['Entregado'] is None else "Sí"
+        ]
+        ws.append(row)
+        for cell in ws[ws.max_row]:
+            cell.alignment = Alignment(wrap_text=True, horizontal="center", vertical="center")
+            cell.border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+
+    # Ajustar el ancho de las columnas
+    column_widths = {
+        'A': 7,
+        'B': 15,
+        'C': 25,
+        'D': 20,
+        'E': 25,
+        'F': 15,
+        'G': 20,
+        'H': 15,
+        'I': 10
+    }
+    for col, width in column_widths.items():
+        ws.column_dimensions[col].width = width
+
+    # Guardar el archivo en memoria
+    from io import BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(output, download_name="listado_no_entregados.xlsx", as_attachment=True)
+
 @app.route('/check_session')
 def check_session():
     if 'loggedin' in session:
