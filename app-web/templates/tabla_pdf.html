@@ -249,10 +249,19 @@
 
               <td>{{ registro.Time_box }}</td>
               <td>
-                {{ registro.Cedula_Family if registro.Cedula_Family else ' ' }}
+                {% if registro.Cedula_Family %} {{ registro.Cedula_Family }} {%
+                elif registro.Cedula_autorizado %} {{ registro.Cedula_autorizado
+                }} {% else %} &nbsp;
+                <!-- Espacio en blanco -->
+                {% endif %}
               </td>
+
               <td>
-                {{ registro.Name_Family if registro.Name_Family else ' ' }}
+                {% if registro.Name_Family %} {{ registro.Name_Family }} {% elif
+                registro.Nombre_autorizado %} {{ registro.Nombre_autorizado }}
+                {% else %} &nbsp;
+                <!-- Espacio en blanco -->
+                {% endif %}
               </td>
               <td>{{ "Si" if registro.Manually else 'No' }}</td>
               <td>{{"Si" if registro.Lunch else 'No' }}</td>

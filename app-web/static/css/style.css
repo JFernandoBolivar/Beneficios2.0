@@ -529,7 +529,18 @@ input[type="number"] {
 }
 .swal-text {
   font-size: 2em;
+  text-align: center;
 }
+
+/* ................. */
+
+.custom-table {
+  max-height: 300px;
+  border-radius: 50px;
+  overflow-y: auto;
+  border-collapse: separate;
+}
+/* ................... */
 .bx-search:hover {
   color: rgb(78, 44, 202);
 }

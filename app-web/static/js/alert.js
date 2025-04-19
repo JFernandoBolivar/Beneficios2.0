@@ -1,9 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const exito = document.getElementById("registroExit");
+  const registroForm = $("#registroForm");
   const regist = document.getElementById("alert_regist");
-  const efects = document.getElementById("efects");
-  const urlParams = new URLSearchParams(window.location.search);
-  const erorfamily = urlParams.get("error_familiar");
 
   if (regist) {
     regist.addEventListener("click", (event) => {
@@ -22,148 +19,286 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  $(document).ready(function () {
-    const registroForm = $("#registroForm");
+  $("#registroExit").on("click", function () {
+    Swal.fire({
+      title: "¿Quién va a retirar el beneficio?",
+      showCancelButton: true,
+      confirmButtonText: "Titular",
+      cancelButtonText: "Autorizado",
+      reverseButtons: true,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Mostrar campos adicionales de merienda y observación para titular
+        Swal.fire({
+          title: "¿Recibirá la bolsa de meriendas?",
+          showCancelButton: true,
+          confirmButtonText: "Sí",
+          cancelButtonText: "No",
+          reverseButtons: true,
+        }).then((result) => {
+          const lunchValue = result.isConfirmed ? "1" : "0";
+          $("<input>")
+            .attr({
+              type: "hidden",
+              name: "lunch",
+              value: lunchValue,
+            })
+            .appendTo(registroForm);
 
-    $("#registroExit").on("click", function () {
-      Swal.fire({
-        title: "¿Quién va a retirar el beneficio?",
-        showCancelButton: true,
-        confirmButtonText: "Titular",
-        cancelButtonText: "Autorizado",
-        reverseButtons: true,
-      }).then((result) => {
-        if (result.isConfirmed) {
-          // Titular
+          // Preguntar si desea agregar una observación
           Swal.fire({
-            title: "¿Recibirá la bolsa de meriendas?",
+            title: "¿Quieres agregar alguna observación?",
             showCancelButton: true,
-            confirmButtonText: "Sí",
-            cancelButtonText: "No",
+            confirmButtonText: "Sí, agregar",
+            cancelButtonText: "No agregar",
             reverseButtons: true,
           }).then((result) => {
-            const lunchValue = result.isConfirmed ? "1" : "0";
-            $("<input>")
-              .attr({
-                type: "hidden",
-                name: "lunch",
-                value: lunchValue,
-              })
-              .appendTo(registroForm);
-
-            Swal.fire({
-              title: "¿Quieres agregar alguna observación?",
-              showCancelButton: true,
-              confirmButtonText: "Sí, agregar",
-              cancelButtonText: "No agregar",
-              reverseButtons: true,
-              preConfirm: () => {
-                Swal.fire({
-                  title: "Ingrese la observación:",
-                  input: "text",
-                  inputAttributes: {
-                    autocapitalize: "off",
-                  },
-                  showCancelButton: true,
-                  confirmButtonText: "Registrar",
-                  cancelButtonText: "Cancelar",
-                  showLoaderOnConfirm: true,
-                  preConfirm: (observacion) => {
-                    if (observacion) {
-                      $("<input>")
-                        .attr({
-                          type: "hidden",
-                          name: "observacion",
-                          value: observacion.toUpperCase(),
-                        })
-                        .appendTo(registroForm);
-                    }
-                    $("<input>")
-                      .attr({
-                        type: "hidden",
-                        name: "entregado",
-                        value: "1",
-                      })
-                      .appendTo(registroForm);
-                    return true;
-                  },
-                }).then((result) => {
-                  if (result.isConfirmed) {
-                    registroForm.submit();
-                  }
-                });
-              },
-            }).then((result) => {
-              if (result.dismiss === Swal.DismissReason.cancel) {
-                $("<input>")
-                  .attr({
-                    type: "hidden",
-                    name: "entregado",
-                    value: "1",
-                  })
-                  .appendTo(registroForm);
-                registroForm.submit();
-              }
-            });
-          });
-        } else if (result.dismiss === Swal.DismissReason.cancel) {
-          // Autorizado
-          Swal.fire({
-            title: "Ingrese el Nombre del Autorizado:",
-            input: "text",
-            inputAttributes: {
-              autocapitalize: "off",
-              placeholder: "APELLIDO Y NOMBRE"
-            },
-            showCancelButton: true,
-            confirmButtonText: "Siguiente",
-            cancelButtonText: "Cancelar",
-            showLoaderOnConfirm: true,
-            preConfirm: (nombreFamiliar) => {
-              if (nombreFamiliar) {
-                $("<input>")
-                  .attr({
-                    type: "hidden",
-                    name: "nombrefamiliar",
-                    value: nombreFamiliar.toUpperCase(),
-                  })
-                  .appendTo(registroForm);
-                return true;
-              }
-            },
-          }).then((result) => {
             if (result.isConfirmed) {
+              // Mostrar input para observación
               Swal.fire({
-                title: "Ingrese la cédula del Autorizado:",
-                input: "number",
+                title: "Ingrese la observación:",
+                input: "text",
                 inputAttributes: {
                   autocapitalize: "off",
-                  style: "width: 100%;",
-                  maxlength: "8",
                 },
                 showCancelButton: true,
-                confirmButtonText: "Siguiente",
+                confirmButtonText: "Registrar",
                 cancelButtonText: "Cancelar",
                 showLoaderOnConfirm: true,
-                preConfirm: (cedulaFamiliar) => {
-                  if (cedulaFamiliar && cedulaFamiliar.length <= 8) {
+                preConfirm: (observacion) => {
+                  if (observacion) {
                     $("<input>")
                       .attr({
                         type: "hidden",
-                        name: "cedulafamiliar",
-                        value: cedulaFamiliar,
+                        name: "observacion",
+                        value: observacion.toUpperCase(),
                       })
                       .appendTo(registroForm);
-                    return true;
-                  } else {
-                    Swal.showValidationMessage(
-                      "La cédula debe tener máximo 8 dígitos"
-                    );
-                    return false;
                   }
+                  $("<input>")
+                    .attr({
+                      type: "hidden",
+                      name: "entregado",
+                      value: "1",
+                    })
+                    .appendTo(registroForm);
+                  return true;
                 },
               }).then((result) => {
                 if (result.isConfirmed) {
+                  registroForm.submit();
+                }
+              });
+            } else if (result.dismiss === Swal.DismissReason.cancel) {
+              // Si no desea agregar observación, enviar formulario directamente
+              $("<input>")
+                .attr({
+                  type: "hidden",
+                  name: "entregado",
+                  value: "1",
+                })
+                .appendTo(registroForm);
+              registroForm.submit();
+            }
+          });
+        });
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        // Flujo para autorizado
+        const cedula = $("#cedula").val(); // Obtiene la cédula del titular desde un input
+        fetch(`/obtener_autorizados?cedula=${cedula}`)
+          .then((response) => response.json())
+          .then((autorizados) => {
+            if (autorizados.error) {
+              Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                background: "#fff",
+                color: "#000",
+                text: autorizados.error,
+                showCancelButton: true,
+                confirmButtonText: "Asignar",
+                cancelButtonText: "Cancelar",
+                customClass: {
+                  title: "swal-title",
+                  text: "swal-text",
+                },
+              }).then((result) => {
+                if (result.isConfirmed) {
+                  // Mostrar campo para ingresar el nombre del autorizado
+                  Swal.fire({
+                    title: "Ingrese el Nombre del Autorizado:",
+                    input: "text",
+                    inputAttributes: {
+                      autocapitalize: "off",
+                      placeholder: "APELLIDO Y NOMBRE",
+                    },
+                    showCancelButton: true,
+                    confirmButtonText: "Siguiente",
+                    cancelButtonText: "Cancelar",
+                    showLoaderOnConfirm: true,
+                    preConfirm: (nombreFamiliar) => {
+                      if (nombreFamiliar) {
+                        $("<input>")
+                          .attr({
+                            type: "hidden",
+                            name: "nombrefamiliar",
+                            value: nombreFamiliar.toUpperCase(),
+                          })
+                          .appendTo(registroForm);
+                        return true;
+                      }
+                    },
+                  }).then((result) => {
+                    if (result.isConfirmed) {
+                      // Mostrar campo para ingresar la cédula del autorizado
+                      Swal.fire({
+                        title: "Ingrese la cédula del Autorizado:",
+                        input: "number",
+                        inputAttributes: {
+                          autocapitalize: "off",
+                          style: "width: 100%;",
+                          maxlength: "8",
+                        },
+                        showCancelButton: true,
+                        confirmButtonText: "Siguiente",
+                        cancelButtonText: "Cancelar",
+                        showLoaderOnConfirm: true,
+                        preConfirm: (cedulaFamiliar) => {
+                          if (cedulaFamiliar && cedulaFamiliar.length <= 8) {
+                            $("<input>")
+                              .attr({
+                                type: "hidden",
+                                name: "cedulafamiliar",
+                                value: cedulaFamiliar,
+                              })
+                              .appendTo(registroForm);
+                            return true;
+                          } else {
+                            Swal.showValidationMessage(
+                              "La cédula debe tener máximo 8 dígitos"
+                            );
+                            return false;
+                          }
+                        },
+                      }).then((result) => {
+                        if (result.isConfirmed) {
+                          // Mostrar campos adicionales de merienda y observación
+                          Swal.fire({
+                            title: "¿Recibirá la bolsa de meriendas?",
+                            showCancelButton: true,
+                            confirmButtonText: "Sí",
+                            cancelButtonText: "No",
+                            reverseButtons: true,
+                          }).then((result) => {
+                            const lunchValue = result.isConfirmed ? "1" : "0";
+                            $("<input>")
+                              .attr({
+                                type: "hidden",
+                                name: "lunch",
+                                value: lunchValue,
+                              })
+                              .appendTo(registroForm);
+
+                            // Preguntar si desea agregar una observación
+                            Swal.fire({
+                              title: "¿Quieres agregar alguna observación?",
+                              showCancelButton: true,
+                              confirmButtonText: "Sí, agregar",
+                              cancelButtonText: "No agregar",
+                              reverseButtons: true,
+                            }).then((result) => {
+                              if (result.isConfirmed) {
+                                // Mostrar input para observación
+                                Swal.fire({
+                                  title: "Ingrese la observación:",
+                                  input: "text",
+                                  inputAttributes: {
+                                    autocapitalize: "off",
+                                  },
+                                  showCancelButton: true,
+                                  confirmButtonText: "Registrar",
+                                  cancelButtonText: "Cancelar",
+                                  showLoaderOnConfirm: true,
+                                  preConfirm: (observacion) => {
+                                    if (observacion) {
+                                      $("<input>")
+                                        .attr({
+                                          type: "hidden",
+                                          name: "observacion",
+                                          value: observacion.toUpperCase(),
+                                        })
+                                        .appendTo(registroForm);
+                                    }
+                                    $("<input>")
+                                      .attr({
+                                        type: "hidden",
+                                        name: "entregado",
+                                        value: "1",
+                                      })
+                                      .appendTo(registroForm);
+                                    return true;
+                                  },
+                                }).then((result) => {
+                                  if (result.isConfirmed) {
+                                    registroForm.submit();
+                                  }
+                                });
+                              } else if (result.dismiss === Swal.DismissReason.cancel) {
+                                // Si no desea agregar observación, enviar formulario directamente
+                                $("<input>")
+                                  .attr({
+                                    type: "hidden",
+                                    name: "entregado",
+                                    value: "1",
+                                  })
+                                  .appendTo(registroForm);
+                                registroForm.submit();
+                              }
+                            });
+                          });
+                        }
+                      });
+                    }
+                  });
+                }
+              });
+            } else {
+              // Generar tabla si hay autorizados
+              let tableHtml = `
+                <table class="table custom-table table-striped table-responsive table-bordered" style="max-height: 300px; border-radius: 50px; overflow-y: auto; border-collapse: collapse" id="tabla1">
+                  <thead style="background-color:rgb(136, 130, 130); color: #333; font-weight: bold;">
+                    <tr >
+                      <th scope="col" class="text-center">Cédula</th>
+                      <th scope="col" class="text-center">Nombre</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+              `;
+
+              autorizados.forEach((autorizado) => {
+                tableHtml += `
+                  <tr>
+                    <td>${autorizado.Cedula_autorizado}</td>
+                    <td>${autorizado.Nombre_autorizado}</td>
+                  </tr>
+                `;
+              });
+
+              tableHtml += `
+                  </tbody>
+                </table>
+              `;
+
+              Swal.fire({
+                title: "Autorizado",
+                html: tableHtml,
+                showCancelButton: true,
+                confirmButtonText: "Entregar",
+                cancelButtonText: "Cancelar",
+                reverseButtons: true,
+              }).then((result) => {
+                if (result.isConfirmed) {
+                  // Mostrar campos adicionales después de confirmar entrega
                   Swal.fire({
                     title: "¿Recibirá la bolsa de meriendas?",
                     showCancelButton: true,
@@ -180,13 +315,16 @@ document.addEventListener("DOMContentLoaded", () => {
                       })
                       .appendTo(registroForm);
 
+                    // Preguntar si desea agregar una observación
                     Swal.fire({
                       title: "¿Quieres agregar alguna observación?",
                       showCancelButton: true,
                       confirmButtonText: "Sí, agregar",
                       cancelButtonText: "No agregar",
                       reverseButtons: true,
-                      preConfirm: () => {
+                    }).then((result) => {
+                      if (result.isConfirmed) {
+                        // Mostrar input para observación
                         Swal.fire({
                           title: "Ingrese la observación:",
                           input: "text",
@@ -221,9 +359,8 @@ document.addEventListener("DOMContentLoaded", () => {
                             registroForm.submit();
                           }
                         });
-                      },
-                    }).then((result) => {
-                      if (result.dismiss === Swal.DismissReason.cancel) {
+                      } else if (result.dismiss === Swal.DismissReason.cancel) {
+                        // Si no desea agregar observación, enviar formulario directamente
                         $("<input>")
                           .attr({
                             type: "hidden",
@@ -238,24 +375,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
               });
             }
+          })
+          .catch((error) => {
+            Swal.fire({
+              icon: "error",
+              title: "Error",
+              text: "No se pudo obtener la lista de autorizados.",
+            });
           });
-        }
-      });
+      }
     });
   });
-
-  // Muestra alerta si la cédula del familiar ya está registrada
-  if (erorfamily === "True") {
-    Swal.fire({
-      icon: "error",
-      title: "Oops...",
-      background: "#fff",
-      color: "#000",
-      text: "La cédula del familiar ya se encuentra registrada.",
-      customClass: {
-        title: "swal-title",
-        content: "swal-text",
-      },
-    });
-  }
 });

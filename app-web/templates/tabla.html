@@ -43,7 +43,8 @@
           <th scope="col">Observacion</th>
           <th scope="col">Registro Manual</th>
           <th scope="col">Merienda</th>
-          <th scope="col">Registrado por</th>
+          <th scope="col">Cedula del Registrador</th>
+          <th scope="col">Nombre del Registrador</th>
         </tr>
       </thead>
       <tbody>
@@ -67,10 +68,22 @@
           </td>
 
           <td>{{ registro.Time_box }}</td>
+
           <td>
-            {{ registro.Cedula_Family if registro.Cedula_Family else ' ' }}
+            {% if registro.Cedula_Family %} {{ registro.Cedula_Family }} {% elif
+            registro.Cedula_autorizado %} {{ registro.Cedula_autorizado }} {%
+            else %} &nbsp;
+            <!-- Espacio en blanco -->
+            {% endif %}
           </td>
-          <td>{{ registro.Name_Family if registro.Name_Family else ' ' }}</td>
+
+          <td>
+            {% if registro.Name_Family %} {{ registro.Name_Family }} {% elif
+            registro.Nombre_autorizado %} {{ registro.Nombre_autorizado }} {%
+            else %} &nbsp;
+            <!-- Espacio en blanco -->
+            {% endif %}
+          </td>
           <td>
             {{ registro.Observation if registro.Observation else 'sin
             observaciones' }}
@@ -79,6 +92,10 @@
           <td>{{ "Si" if registro.Manually else 'No' }}</td>
           <td>{{"Si" if registro.Lunch else 'No' }}</td>
           <td>{{ registro.Staff_ID }}</td>
+          <td>
+            {{ registro.Registrador_Name if registro.Registrador_Name else
+            'Desconocido' }}
+          </td>
         </tr>
         {% endfor %} {%if registro == " " %}
         <tr>

@@ -5,13 +5,28 @@
       <i class="bx bx-log-out"></i><label class="salir">Salir</label>
     </button>
 
-    <a
-      href="{{ url_for('listado_no_registrado_excel') }}"
-      class="btn btn-primary"
-      target="_blank"
-      id="downloadPDF1"
-      >Descargar <i class="bx bxs-download fs-3"></i
-    ></a>
+    <form
+      method="POST"
+      action="{{ url_for('listado_no_registrado_excel') }}"
+      class="form-fecha"
+    >
+      <label for="filtro_excel">Seleccionar filtro:</label>
+      <select id="filtro_excel" class="dateFiltros" name="filtro" required>
+        <option value="" disabled selected>Seleccione un filtro</option>
+        <option value="autorizados">Por Autorizados</option>
+        <option value="activo">Por Activos</option>
+        <option value="pasivo">Por Pasivos</option>
+        <option value="manually">Por Registro Manual</option>
+        <option value="comision_vencida">
+          Por Comisión de Servicio Vencida
+        </option>
+        <option value="comision_vigente">
+          Por Comisión de Servicio Vigente
+        </option>
+        <option value="todos">Data General</option>
+      </select>
+      <button type="submit" class="ml-3">Generar Excel</button>
+    </form>
   </div>
   <h1 class="fs-3">Listado de Personas que no han Recibido la Caja</h1>
   <div class="contentBusc">

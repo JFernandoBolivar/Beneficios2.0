@@ -19,7 +19,7 @@ app.config['SECRET_KEY'] = '3054=HitM'
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'user623'
-app.config['MYSQL_DB'] = 'data_abrir'
+app.config['MYSQL_DB'] = 'abril'
 MySQL = MySQL(app)
 # app.config['SESSION_TYPE'] = 'filesystem' 
 # app.config['SESSION_PERMANENT'] = False
@@ -187,8 +187,9 @@ def consult():
     fecha = request.form.get('fecha', None)
     tipo_usuario = request.form.get('tipo_usuario', 'general')
     cedula = request.form.get('cedula', None)
+    session['cedula_titular'] = cedula
     cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
-    
+    print("Cédula recibida desde la sesión:",session['cedula_titular'])
     if super_admin == 0:
         # Si el usuario es básico, solo puede ver los datos del día actual
         fecha = datetime.now().strftime('%Y-%m-%d')
@@ -203,7 +204,7 @@ def consult():
         ''', (cedula,))
         data_exit = cursor.fetchone()
         cursor.close()
-        
+
         if data_exit:
             estatus = data_exit['Estatus']
             if estatus == 3:
@@ -390,12 +391,12 @@ def registrar():
     if 'loggedin' not in session:
         return redirect(url_for('login'))
     cedula = request.form['cedula']
+  
     cedula_personal = request.form['cedula_personal']
     super_admin = session.get('Super_Admin')
     fecha = request.form.get('fecha', None)
     CIFamily = request.form.get('cedulafamiliar', None)
     lunch = request.form.get('lunch', '0')
-     
     if super_admin == 0:
         # Si el usuario es básico, solo puede ver los datos del día actual
         fecha = datetime.now().strftime('%Y-%m-%d')
@@ -415,15 +416,39 @@ def registrar():
         faltan = total_personas - total_recibido
         cursor.close()
         return render_template('index.html', mensaje=mensaje, cedula=cedula, mensaje2="Por favor, verifique la cédula ingresada.", total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
-
+    
     # Registro exitoso
     observacion = request.form.get('observacion', '').upper()
     nameFamily = request.form.get('nombrefamiliar', None).upper() if request.form.get('nombrefamiliar', None) else None
     CIFamily = CIFamily.upper() if CIFamily else None
     hora_entrega = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
-    cursor.execute('INSERT INTO delivery (Time_box, Staff_ID, Observation, Name_Family, Cedula_Family, Data_ID, Entregado, Lunch) VALUES (%s, %s, %s, %s, %s, %s, 1, %s)', 
-                  (hora_entrega, cedula_personal, observacion, nameFamily, CIFamily, data_exit['ID'], lunch))
+    estatus = data_exit['Estatus']
+    if estatus == 1:
+    # Insertar en la tabla delivery para estatus 1
+        cursor.execute('INSERT INTO delivery (Time_box, Staff_ID, Observation, Name_Family, Cedula_Family, Data_ID, Entregado, Lunch) VALUES (%s, %s, %s, %s, %s, %s, 1, %s)', 
+                   (hora_entrega, cedula_personal, observacion, nameFamily, CIFamily, data_exit['ID'], lunch))
+
+    elif estatus == 2:
+    # Insertar en la tabla delivery para estatus 2
+        cursor.execute('''
+        INSERT INTO delivery (Time_box, Staff_ID, Observation, Data_ID, Entregado, Lunch) 
+        VALUES (%s, %s, %s, %s, 1, %s)
+    ''', (hora_entrega, cedula_personal, observacion, data_exit['ID'], lunch))
+
+    # Verificar si los campos `Cedula_autorizado` y `Nombre_autorizado` están vacíos
+        if not data_exit['Cedula_autorizado'] and not data_exit['Nombre_autorizado']:
+        # Actualizar los datos en los campos si están vacíos
+            cursor.execute('''
+            UPDATE data
+            SET Cedula_autorizado = %s, Nombre_autorizado = %s 
+            WHERE Cedula = %s
+        ''', (CIFamily, nameFamily, cedula))
+    else:
+        # Si los campos ya tienen datos, no hacer nada
+        print("Los campos Cedula_autorizado y Nombre_autorizado ya tienen datos. No se realizará ninguna modificación.")
+
+# Confirmar los cambios en la base de datos
     MySQL.connection.commit()
     
     if data_exit['Cedula']:
@@ -442,6 +467,35 @@ def registrar():
     cursor.close()
     
     return render_template('index.html', mensaje=mensaje, cedula=cedula, mensaje2=mensaje2, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
+
+# 78078
+# autorizado
+
+@app.route("/obtener_autorizados", methods=["GET"])
+def obtener_autorizados():
+    if 'loggedin' not in session:
+        return jsonify({"error": "No autorizado"}), 403
+
+    # Recupera la cédula del titular desde la sesión
+    cedula_titular = session.get('cedula_titular')
+    print("Cédula recibida desde la sesión:", cedula_titular)
+
+    if not cedula_titular:
+        return jsonify({"error": "Cédula del titular no proporcionada"}), 400
+
+    cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('''
+        SELECT Cedula_autorizado, Nombre_autorizado, estatus
+        FROM data
+        WHERE Cedula = %s AND (Cedula_autorizado IS NOT NULL AND TRIM(Cedula_autorizado) != '')
+    ''', (cedula_titular,))
+    autorizados = cursor.fetchall()
+    cursor.close()
+
+    if not autorizados:
+        return jsonify({"error": "No se encontraron autorizados para esta cédula, desea asignarlo?"}), 404
+
+    return jsonify(autorizados)
 
 #CONTEO DE ENTREGAS POR USUARIO
 
@@ -943,14 +997,18 @@ def listado():
     if 'loggedin' not in session:
         return redirect(url_for('login'))
     cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+
     cursor.execute('''
-        SELECT d.Data_ID, d.Time_box, d.Entregado,  d.Staff_ID, d.Observation,d.Lunch, d.Cedula_Family, d.Name_Family,
-               data.Cedula,data.Code, data.Name_Com,data.Manually,data.Location_Admin, data.Estatus,data.ESTADOS,data.Location_Physical 
-        FROM delivery d
-        JOIN data ON d.Data_ID = data.ID
-        WHERE d.Entregado = 1
+    SELECT d.Data_ID, d.Time_box, d.Entregado, d.Staff_ID, d.Observation, d.Lunch, d.Cedula_Family, d.Name_Family,data.Cedula_autorizado, data.Nombre_autorizado,
+           data.Cedula, data.Code, data.Name_Com, data.Manually, data.Location_Admin, data.Estatus, data.ESTADOS, data.Location_Physical,
+           staff.Name_Com AS Registrador_Name  -- Incluye el nombre del registrador
+    FROM delivery d
+    JOIN data ON d.Data_ID = data.ID
+    LEFT JOIN data AS staff ON d.Staff_ID = staff.Cedula  -- Une con la tabla de datos para obtener el nombre del registrador
+    WHERE d.Entregado = 1
     ''')
     registros = cursor.fetchall()
+       
     cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1')
     total_recibido = cursor.fetchone()['total_recibido']
     cursor.close()
@@ -963,7 +1021,7 @@ def listado_pdf():
         fecha = request.form['fecha']
         cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('''
-            SELECT d.Data_ID, d.Time_box, d.Entregado,  d.Staff_ID, d.Observation, d.Lunch,d.Cedula_Family, d.Name_Family,
+            SELECT d.Data_ID, d.Time_box, d.Entregado,  d.Staff_ID, d.Observation, d.Lunch,d.Cedula_Family, d.Name_Family,data.Cedula_autorizado, data.Nombre_autorizado,
                    data.Cedula, data.Name_Com,data.Manually,data.Location_Admin, data.Estatus,data.ESTADOS,data.Location_Physical 
             FROM delivery d
             JOIN data ON d.Data_ID = data.ID
@@ -993,14 +1051,14 @@ def listado_excel():
 
         # Construir la consulta SQL dinámicamente
         query = '''
-            SELECT d.Data_ID, d.Time_box, d.Entregado, d.Staff_ID, d.Observation, d.Lunch, d.Cedula_Family, d.Name_Family,
+            SELECT d.Data_ID, d.Time_box, d.Entregado, d.Staff_ID, d.Observation, d.Lunch,d.Cedula_Family, d.Name_Family,data.Cedula_autorizado, data.Nombre_autorizado,
                    data.Cedula, data.Name_Com, data.Manually, data.Location_Admin, data.Estatus, data.ESTADOS, data.Location_Physical 
             FROM delivery d
             JOIN data ON d.Data_ID = data.ID
             WHERE d.Entregado = 1 AND DATE(d.Time_box) = %s
         '''
         if filtro == 'autorizados':
-            query += ' AND d.Cedula_Family IS NOT NULL'
+            query += ' AND (d.Cedula_Family IS NOT NULL OR data.Cedula_autorizado IS NOT NULL)'
         elif filtro == 'activo':
             query += ' AND data.Estatus = 1'
         elif filtro == 'pasivo':
@@ -1062,25 +1120,30 @@ def listado_excel():
             cursor.execute('SELECT Name_Com FROM data WHERE Cedula = %s', (registro['Staff_ID'],))
             staff_name = cursor.fetchone()['Name_Com']
             cursor.close()
+            
+            cedula_autorizado = registro['Cedula_Family'] if registro['Cedula_Family'] else registro['Cedula_autorizado'] if registro['Cedula_autorizado'] else ''
+            nombre_autorizado = registro['Name_Family'] if registro['Name_Family'] else registro['Nombre_autorizado'] if registro['Nombre_autorizado'] else ''
 
-            estatus = "Activo" if registro['Estatus'] == 1 else "Pasivo" if registro['Estatus'] == 2 else "Comisión Vencida" if registro['Estatus'] == 9  else "Comisión Vencida" if registro['Estatus'] == 11 else "Comisión Vigente"
+            estatus = "Activo" if registro['Estatus'] == 1 else "Pasivo" if registro['Estatus'] == 2 else "Comisión Vencida" if registro['Estatus'] == 9 else "Comisión Vencida" if registro['Estatus'] == 11 else "Comisión Vigente"
+           
             row = [
                 idx,
                 registro['Cedula'],
                 registro['Name_Com'],
                 registro['ESTADOS'] if registro['Estatus'] in [2, 9, 10] else "",
                 estatus,
-                registro['Location_Physical'] if registro['Estatus'] == 1 else "",
-                registro['Location_Admin'] if registro['Estatus'] == 1 else "",
+                registro['Location_Physical'] if  registro['Estatus'] == 1 else "",
+                registro['Location_Admin'] if   registro['Estatus'] == 1 else "",
                 registro['Time_box'],
-                registro['Cedula_Family'] if registro['Cedula_Family'] else '',
-                registro['Name_Family'] if registro['Name_Family'] else '',
+                cedula_autorizado,
+                nombre_autorizado,
                 registro['Observation'] if registro['Observation'] else ' ',
                 "Si" if registro['Manually'] else 'No',
                 "Si" if registro['Lunch'] else 'No',
                 registro['Staff_ID'],
                 staff_name
             ]
+            
             ws.append(row)
             for cell in ws[ws.max_row]:
                 cell.alignment = Alignment(wrap_text=True, horizontal="center", vertical="center")
@@ -1114,9 +1177,12 @@ def listado_excel():
         output = BytesIO()
         wb.save(output)
         output.seek(0)
-
-        return send_file(output, download_name="listado.xlsx", as_attachment=True)
+        fecha_actual = datetime.now().strftime('%Y-%m-%d')
+        nombre_archivo = f"listado_entregados_{fecha_actual}.xlsx"
+        
+        return send_file(output, download_name=nombre_archivo, as_attachment=True)
     return render_template('tabla_pdf.html')
+
 
 # GENERAR LISTADO DE NO ENTREGADOS 
 @app.route("/listado_no_registrado")
@@ -1187,19 +1253,38 @@ def listado_no_regist_pdf():
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = 'inline; filename=listado.pdf'
     return response
+
 # Generar listado de no entregado en excel
 @app.route("/listado_no_registrado_excel", methods=["GET", "POST"])
 def listado_no_registrado_excel():
     if 'loggedin' not in session:
         return redirect(url_for('login'))
     
-    cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('''
+    # Obtener el filtro de estatus desde el formulario
+    filtro = request.form.get('filtro', 'todos')  # Por defecto, "todos"
+    print(f"Filtro seleccionado: {filtro}")
+
+    # Construir la consulta SQL dinámicamente según el filtro
+    query = '''
         SELECT data.Cedula, data.Name_Com, data.Location_Physical, data.Location_Admin, data.Code, data.Estatus, data.ESTADOS, delivery.Entregado
         FROM data
         LEFT JOIN delivery ON data.ID = delivery.Data_ID
         WHERE delivery.Entregado IS NULL OR delivery.Entregado = 0
-    ''')
+    '''
+    if filtro == 'activo':
+        query += ' AND data.Estatus = 1'
+    elif filtro == 'pasivo':
+        query += ' AND data.Estatus = 2'
+    elif filtro == 'comision_vigente':
+        query += ' AND data.Estatus = 10'
+    elif filtro == 'comision_vencida':
+        query += ' AND data.Estatus IN (9, 11)'
+    elif filtro == 'autorizados':
+        query += ' AND (data.Cedula_autorizado IS NOT NULL OR TRIM(data.Cedula_autorizado) != "")'
+
+    # Ejecutar la consulta
+    cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute(query)
     registros = cursor.fetchall()
     cursor.close()
 
@@ -1217,6 +1302,7 @@ def listado_no_registrado_excel():
     img2.width, img2.height = 60, 60
     ws.add_image(img1, 'A1')
 
+    # Encabezados
     headers = ["#", "Cédula", "Nombre Completo", "Unidad Física", "Ubicación Administrativa", "Código", "Estatus", "Estado", "Entregado"]
     last_column = chr(64 + len(headers))
     img2.anchor = f'{last_column}1'
@@ -1228,7 +1314,7 @@ def listado_no_registrado_excel():
     ws['A1'].font = Font(size=14, bold=True)
     ws['A1'].alignment = Alignment(horizontal="center", vertical="center")
 
-    # Encabezados
+    # Agregar encabezados
     ws.append(headers)
     header_fill = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")
     for cell in ws[2]:
@@ -1279,7 +1365,11 @@ def listado_no_registrado_excel():
     wb.save(output)
     output.seek(0)
 
-    return send_file(output, download_name="listado_no_entregados.xlsx", as_attachment=True)
+    # Obtener la fecha actual para el nombre del archivo
+    fecha_actual = datetime.now().strftime('%Y-%m-%d')
+    nombre_archivo = f"listado_no_entregados_{fecha_actual}.xlsx"
+
+    return send_file(output, download_name=nombre_archivo, as_attachment=True)
 
 @app.route('/check_session')
 def check_session():
