@@ -531,7 +531,16 @@ input[type="number"] {
   font-size: 2em;
   text-align: center;
 }
+/* ..................... */
 
+.custom-validation-message {
+  white-space: nowrap;
+  font-size: 14px;
+  color: #f27474;
+  background-color: transparent;
+  padding: 0;
+  text-align: center;
+}
 /* ................. */
 
 .custom-table {

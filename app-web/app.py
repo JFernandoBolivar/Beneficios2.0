@@ -402,6 +402,20 @@ def registrar():
         fecha = datetime.now().strftime('%Y-%m-%d')
         
     cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+    
+  # Verificar si la cédula del autorizado o familiar ya existe  
+    cursor.execute('''
+       SELECT COUNT(*) AS total
+       FROM data
+        WHERE Cedula_autorizado = %s
+    ''', (CIFamily,))
+    existe_cedula = cursor.fetchone()['total']
+
+    if existe_cedula > 0:
+       cursor.close()
+       mensaje = "La cédula del autorizado  ya está registrada en el sistema."
+       return render_template('index.html', mensaje=mensaje, cedula=cedula, mensaje2="Por favor, verifique los datos ingresados.")
+    
     cursor.execute('SELECT * FROM data WHERE Cedula = %s', (cedula,))
     data_exit = cursor.fetchone()
     

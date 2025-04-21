@@ -156,13 +156,16 @@ document.addEventListener("DOMContentLoaded", () => {
                         input: "number",
                         inputAttributes: {
                           autocapitalize: "off",
-                          style: "width: 100%;",
+                          style: "width: 80%;",
                           maxlength: "8",
                         },
                         showCancelButton: true,
                         confirmButtonText: "Siguiente",
                         cancelButtonText: "Cancelar",
                         showLoaderOnConfirm: true,
+                        customClass: {
+                          validationMessage: "custom-validation-message", // Clase personalizada
+                        },
                         preConfirm: (cedulaFamiliar) => {
                           if (cedulaFamiliar && cedulaFamiliar.length <= 8) {
                             $("<input>")
@@ -174,9 +177,8 @@ document.addEventListener("DOMContentLoaded", () => {
                               .appendTo(registroForm);
                             return true;
                           } else {
-                            Swal.showValidationMessage(
-                              "La cédula debe tener máximo 8 dígitos"
-                            );
+                            // arreglarlo
+                            Swal.showValidationMessage("La cédula debe tener máximo 8 dígitos");
                             return false;
                           }
                         },
