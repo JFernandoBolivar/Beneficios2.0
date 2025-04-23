@@ -19,7 +19,7 @@ app.config['SECRET_KEY'] = '3054=HitM'
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'user623'
-app.config['MYSQL_DB'] = 'abril'
+app.config['MYSQL_DB'] = 'pasivo-abril'
 MySQL = MySQL(app)
 # app.config['SESSION_TYPE'] = 'filesystem' 
 # app.config['SESSION_PERMANENT'] = False
@@ -1132,8 +1132,11 @@ def listado_excel():
         for idx, registro in enumerate(registros, start=1):
             cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
             cursor.execute('SELECT Name_Com FROM data WHERE Cedula = %s', (registro['Staff_ID'],))
-            staff_name = cursor.fetchone()['Name_Com']
+            staff_data = cursor.fetchone()
             cursor.close()
+
+            # Manejar el caso en el que no se encuentre el Staff_ID
+            staff_name = staff_data['Name_Com'] if staff_data else "Desconocido"
             
             cedula_autorizado = registro['Cedula_Family'] if registro['Cedula_Family'] else registro['Cedula_autorizado'] if registro['Cedula_autorizado'] else ''
             nombre_autorizado = registro['Name_Family'] if registro['Name_Family'] else registro['Nombre_autorizado'] if registro['Nombre_autorizado'] else ''
