@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
     const ver_datos = document.getElementById("ver_datos");
     const exit = document.getElementById("exit");
+    const exit4 = document.getElementById("exit4");
     const exit2 = document.getElementById("exit2");
     const exit3 = document.getElementById("exit3");
     const exit_tabla_buttons = document.querySelectorAll('.exit_tabla');
@@ -17,6 +18,16 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
+
+    if (exit4) {
+        button.addEventListener('click', () => {
+            const content27 = document.querySelector(".excel2");
+            if (content27) {
+                content27.style.display = "none";
+            }
+        });
+    };
+
 
     if (exit2) {
         exit2.addEventListener("click", () => {

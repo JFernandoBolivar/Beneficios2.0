@@ -22,8 +22,8 @@ document.addEventListener("DOMContentLoaded", function () {
       filas.forEach((fila) => {
         const textoCedula = fila.cells[0].textContent.toLowerCase();
         const textoUnidadFisica = fila.cells[2].textContent.toLowerCase();
-        const textoEntrega = fila.cells[5]
-          ? fila.cells[5].textContent.toLowerCase()
+        const textoEntrega = fila.cells[7]
+          ? fila.cells[7].textContent.toLowerCase()
           : "";
         const textoEstado = fila.cells[3].textContent.toLowerCase();
 

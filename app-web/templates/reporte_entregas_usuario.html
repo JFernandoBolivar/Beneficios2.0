@@ -5,19 +5,18 @@
       <i class="bx bx-log-out"></i><label class="salir">Salir</label>
     </button>
     <div class="alert excel2" role="alert">
-      <button id="exit">X</button>
+      <button id="exit exit4">X</button>
       <h1 class="fs-3 report mt-1">Reporte de Entregas por Usuario</h1>
-      <span
-        ><form
-          method="POST"
-          action="{{ url_for('reporte_entregas_usuario_excel') }}"
-          class="form-fecha mt-3"
-        >
-          <label for="fecha">Fecha:</label>
-          <input type="date" id="fecha" name="fecha" class="form-control" />
-          <button type="submit" class="btn btn-dark">Generar Excel</button>
-        </form></span
+
+      <form
+        method="POST"
+        action="{{ url_for('reporte_entregas_usuario_excel') }}"
+        class="form-fecha mt-3"
       >
+        <label for="fecha">Fecha:</label>
+        <input type="date" id="fecha" name="fecha" class="form-control" />
+        <button type="submit" class="btn btn-dark">Generar Excel</button>
+      </form>
     </div>
 
     <a class="btn btn-primary" id="downloadPDF1"

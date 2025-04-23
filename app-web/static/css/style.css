@@ -353,6 +353,11 @@ input[type="number"] {
   font-size: 1.8em;
   transform: translateY(0.1em);
 }
+.filtro-historial {
+  border-top: solid #000 1px;
+  width: 90%;
+  border-bottom: solid #000 1px;
+}
 .Nros {
   font-size: 1.4em;
   font-family: "Times New Roman", Times, serif;

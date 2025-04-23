@@ -19,7 +19,7 @@ app.config['SECRET_KEY'] = '3054=HitM'
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'user623'
-app.config['MYSQL_DB'] = 'pasivo-abril'
+app.config['MYSQL_DB'] = 'abrilpasivos'
 MySQL = MySQL(app)
 # app.config['SESSION_TYPE'] = 'filesystem' 
 # app.config['SESSION_PERMANENT'] = False
@@ -550,11 +550,17 @@ def reporte_entregas_usuario():
     for reporte in reportes:
         cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT Name_Com FROM data WHERE Cedula = %s', (reporte['Staff_ID'],))
-        staff_name = cursor.fetchone()['Name_Com']
+        staff_data = cursor.fetchone()
         cursor.close()
+    
+    # Manejar el caso en el que no se encuentre el Staff_ID
+        staff_name = staff_data['Name_Com'] if staff_data else "Desconocido"
+    
+    # Actualizar el diccionario `reporte` con el nombre del staff y la fecha formateada
         reporte['staff_name'] = staff_name
         fecha = reporte['fecha']
         reporte['fecha_formateada'] = format_date(fecha, format='full', locale='es_ES')
+
     
     return render_template('reporte_entregas_usuario.html', reportes=reportes)
 
@@ -590,8 +596,13 @@ def reporte_entregas_usuario_excel():
     for reporte in reportes:
         cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT Name_Com FROM data WHERE Cedula = %s', (reporte['Staff_ID'],))
-        staff_name = cursor.fetchone()['Name_Com']
+        staff_data = cursor.fetchone()
         cursor.close()
+    
+    # Manejar el caso en el que no se encuentre el Staff_ID
+        staff_name = staff_data['Name_Com'] if staff_data else "Desconocido"
+    
+    # Actualizar el diccionario `reporte` con el nombre del staff y la fecha formateada
         reporte['staff_name'] = staff_name
         fecha = reporte['fecha']
         reporte['fecha_formateada'] = format_date(fecha, format='full', locale='es_ES')
@@ -634,7 +645,12 @@ def reporte_entregas_usuario_excel():
     wb.save(output)
     output.seek(0)
 
-    return send_file(output, download_name="reporte_entregas_usuario.xlsx", as_attachment=True)
+  # Obtener la fecha actual para el nombre del archivo
+    fecha_actual = datetime.now().strftime('%Y-%m-%d')
+    nombre_archivo = f"Reporte de entregas por usuario_{fecha_actual}.xlsx"
+
+   
+    return send_file(output,download_name=nombre_archivo, as_attachment=True)
 
 # EDITAR EL ESTATUS DE LOS USUARIOS
 @app.route("/cambiar_estatus", methods=["GET", "POST"])
