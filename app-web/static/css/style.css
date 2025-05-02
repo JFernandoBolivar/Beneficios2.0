@@ -381,6 +381,11 @@ input[type="number"] {
   text-align: center;
 }
 
+/* autotizados */
+.tabla_autorizados:hover {
+  background-color: #918b8b;
+}
+
 #tabla1 > .table {
   width: 100%;
   border-collapse: collapse;

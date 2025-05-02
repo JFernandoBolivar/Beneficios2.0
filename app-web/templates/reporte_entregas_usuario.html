@@ -1,11 +1,34 @@
 {% extends "navbar/navUser.html" %} {% block contentt %}
+<style>
+  #exit4 {
+    text-decoration: none;
+    color: black;
+    font-size: 20px;
+    border: 1px solid black;
+    padding: 5px 10px;
+    border-radius: 5px;
+    position: absolute;
+    top: 10px; /* Ajusta la distancia desde la parte superior */
+    left: 10px; /* Ajusta la distancia desde la parte izquierda */
+    z-index: 1000; /* Asegura que el botón esté por encima de otros elementos */
+  }
+  #exit4:hover {
+    background: #ff2f2f; /* Cambia el color de fondo al pasar el mouse */
+  }
+</style>
+
 <div class="container_tabla">
   <div class="header_tabla">
     <button class="exit_tabla">
       <i class="bx bx-log-out"></i><label class="salir">Salir</label>
     </button>
-    <div class="alert excel2" role="alert">
-      <button id="exit exit4">X</button>
+    <div class="alert excel2 mse" role="alert">
+      <a
+        id="exit exit4"
+        class="btn me-3"
+        href="{{ url_for('reporte_entregas_usuario') }}"
+        >X</a
+      >
       <h1 class="fs-3 report mt-1">Reporte de Entregas por Usuario</h1>
 
       <form

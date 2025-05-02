@@ -19,7 +19,7 @@ app.config['SECRET_KEY'] = '3054=HitM'
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'user623'
-app.config['MYSQL_DB'] = 'abrilpasivos'
+app.config['MYSQL_DB'] = 'abrir_pasivos'
 MySQL = MySQL(app)
 # app.config['SESSION_TYPE'] = 'filesystem' 
 # app.config['SESSION_PERMANENT'] = False
@@ -510,6 +510,88 @@ def obtener_autorizados():
         return jsonify({"error": "No se encontraron autorizados para esta cédula, desea asignarlo?"}), 404
 
     return jsonify(autorizados)
+
+# tabla de autorizados
+
+@app.route("/listado_autorizados", methods=["GET"])
+def listado_autorizados():
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
+    
+    cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+    
+    # Consulta para obtener los datos del personal con autorizados
+    cursor.execute('''
+        SELECT 
+            data.Cedula AS Beneficiario_Cedula,
+            data.Name_Com AS Beneficiario_Nombre,
+            data.Cedula_autorizado AS Autorizado_Cedula,
+            data.Nombre_autorizado AS Autorizado_Nombre,
+            delivery.Cedula_Family AS Delivery_Cedula,
+            delivery.Name_Family AS Delivery_Nombre
+        FROM data
+        LEFT JOIN delivery ON data.ID = delivery.Data_ID
+        WHERE 
+            (data.Cedula_autorizado IS NOT NULL AND TRIM(data.Cedula_autorizado) != '') OR
+            (delivery.Cedula_Family IS NOT NULL AND TRIM(delivery.Cedula_Family) != '') OR
+            (delivery.Name_Family IS NOT NULL AND TRIM(delivery.Name_Family) != '')
+    ''')
+    
+    registros = cursor.fetchall()
+    cursor.close()
+    
+    # Formatear los datos para la tabla
+    for registro in registros:
+        registro['Autorizado_Cedula'] = registro['Autorizado_Cedula'] or registro['Delivery_Cedula'] or "N/A"
+        registro['Autorizado_Nombre'] = registro['Autorizado_Nombre'] or registro['Delivery_Nombre'] or "N/A"
+    
+    total_autorizados = len(registros)
+    return render_template('listado_autorizados.html', registros=registros,total_autorizados=total_autorizados)
+
+
+# EDITAR USUARIO
+
+@app.route("/editar_autorizado/<cedula>", methods=["GET", "POST"])
+def editar_autorizado(cedula):
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
+    
+    cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+    
+    if request.method == "POST":
+        # Obtener los datos enviados desde el formulario
+        nuevo_nombre = request.form['nuevo_nombre'].strip()
+        nueva_cedula = request.form['nueva_cedula'].strip()
+        
+        # Actualizar los datos del autorizado en la tabla `data`
+        cursor.execute('''
+            UPDATE data
+            SET Nombre_autorizado = %s, Cedula_autorizado = %s
+            WHERE Cedula = %s
+        ''', (nuevo_nombre, nueva_cedula, cedula))
+        
+        # Confirmar los cambios
+        MySQL.connection.commit()
+        cursor.close()
+        
+        # Redirigir de vuelta al listado de autorizados
+        return redirect(url_for('listado_autorizados'))
+    
+    # Obtener los datos actuales del autorizado
+    cursor.execute('''
+        SELECT 
+            data.Cedula AS Beneficiario_Cedula,
+            data.Name_Com AS Beneficiario_Nombre,
+            data.Cedula_autorizado AS Autorizado_Cedula,
+            data.Nombre_autorizado AS Autorizado_Nombre
+        FROM data
+        WHERE data.Cedula = %s
+    ''', (cedula,))
+    
+    registro = cursor.fetchone()
+    cursor.close()
+    
+    return render_template('editar_autorizado.html', registro=registro)
 
 #CONTEO DE ENTREGAS POR USUARIO
 

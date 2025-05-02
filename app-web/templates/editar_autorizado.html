@@ -1,0 +1,41 @@
+{% extends "navbar/navUser.html" %} {% block contentt %}
+<div class="dataUser2 mt-5" style="user-select: none">
+  <a href="{{ url_for('listado_autorizados') }}" id="exit3">X</a>
+  <h2>Editar Autorizado</h2>
+  <form method="POST" id="editarForm">
+    <div class="mt-4 cedulaI">
+      <label for="beneficiario" class="ml-3">
+        Beneficiario: <b class="fs-li">{{ registro.Beneficiario_Nombre }}</b>
+      </label>
+    </div>
+
+    <div class="form-group mt-4">
+      <label for="cedula_autorizado">Cédula del Autorizado</label>
+      <input
+        type="text"
+        class="form-control dateI mt-1"
+        id="cedula_autorizado"
+        name="nueva_cedula"
+        value="{{ registro.Autorizado_Cedula }}"
+        required
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="nombre_autorizado">Nombre del Autorizado</label>
+      <input
+        type="text"
+        class="form-control dateI"
+        id="nombre_autorizado"
+        name="nuevo_nombre"
+        value="{{ registro.Autorizado_Nombre }}"
+        required
+      />
+    </div>
+
+    <button type="submit" class="btn btn-primary userResgresar2 mt-4 mb-2">
+      Guardar Cambios
+    </button>
+  </form>
+</div>
+{% endblock %}

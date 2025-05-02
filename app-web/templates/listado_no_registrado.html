@@ -25,7 +25,14 @@
         </option>
         <option value="todos">Data General</option>
       </select>
-      <button type="submit" class="ml-3">Generar Excel</button>
+      <!-- <button type="submit" class="ml-3">Generar Excel</button>-->
+      <a
+        href="{{ url_for('listado_no_registrado_excel') }}"
+        class="btn btn-primary"
+        id="downloadPDF1"
+      >
+        Descargar <i class="bx bxs-download fs-3"></i>
+      </a>
     </form>
   </div>
   <h1 class="fs-3">Listado de Personas que no han Recibido la Caja</h1>
