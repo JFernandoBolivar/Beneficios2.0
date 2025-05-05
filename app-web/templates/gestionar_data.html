@@ -1,16 +1,9 @@
 {% extends "navbar/navUser.html" %} {% block contentt %}
 <div class="container_tabla">
   <div class="header_tabla">
-    <button class="exit_tabla btn btn-outline-danger">
+    <button class="exit_tabla">
       <i class="bx bx-log-out"></i><label class="salir">Salir</label>
     </button>
-    <a
-      href="{{ url_for('listado_pdf') }}"
-      class="btn btn-primary"
-      id="downloadPDF1"
-    >
-      Descargar <i class="bx bxs-download fs-3"></i>
-    </a>
   </div>
   <h1 class="fs-3 text-center">Gestión de Datos</h1>
   <hr />

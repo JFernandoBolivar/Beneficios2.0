@@ -21,7 +21,7 @@ app.config['SECRET_KEY'] = '3054=HitM'
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'user623'
-app.config['MYSQL_DB'] = 'abrilpasivoss'
+app.config['MYSQL_DB'] = 'gg'
 MySQL = MySQL(app)
 # app.config['SESSION_TYPE'] = 'filesystem' 
 # app.config['SESSION_PERMANENT'] = False
