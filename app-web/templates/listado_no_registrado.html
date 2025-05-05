@@ -1,4 +1,13 @@
 {% extends "navbar/navUser.html" %} {% block contentt%}
+
+<style>
+  .small-select {
+    font-size: 0.875rem; /* Tamaño de fuente más pequeño */
+    padding: 5px 10px; /* Reducir el relleno interno */
+    height: auto; /* Ajustar la altura automáticamente */
+    width: auto; /* Ajustar el ancho automáticamente */
+  }
+</style>
 <div class="container_tabla">
   <div class="header_tabla">
     <button class="exit_tabla">
@@ -10,8 +19,13 @@
       action="{{ url_for('listado_no_registrado_excel') }}"
       class="form-fecha"
     >
-      <label for="filtro_excel">Seleccionar filtro:</label>
-      <select id="filtro_excel" class="dateFiltros" name="filtro" required>
+      <!-- <label for="filtro_excel">Seleccionar filtro:</label>
+      <select
+        id="filtro_excel"
+        class="dateFiltros small-select"
+        name="filtro"
+        required
+      >
         <option value="" disabled selected>Seleccione un filtro</option>
         <option value="autorizados">Por Autorizados</option>
         <option value="activo">Por Activos</option>
@@ -23,8 +37,8 @@
         <option value="comision_vigente">
           Por Comisión de Servicio Vigente
         </option>
-        <option value="todos">Data General</option>
-      </select>
+      </select> -->
+
       <!-- <button type="submit" class="ml-3">Generar Excel</button>-->
       <a
         href="{{ url_for('listado_no_registrado_excel') }}"

@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, make_response, send_from_directory, send_file, jsonify
 from flask_mysqldb import MySQL, MySQLdb
-import webbrowser
+from werkzeug.utils import secure_filename
+import pandas as pd
 
 from datetime import datetime, timedelta
 from weasyprint import HTML
@@ -11,7 +12,8 @@ from markupsafe import Markup
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.drawing.image import Image
-
+import subprocess
+from functools import wraps
 
 app = Flask(__name__)
 # Configuraciones
@@ -19,11 +21,11 @@ app.config['SECRET_KEY'] = '3054=HitM'
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'user623'
-app.config['MYSQL_DB'] = 'abrir_pasivos'
+app.config['MYSQL_DB'] = 'abrilpasivoss'
 MySQL = MySQL(app)
 # app.config['SESSION_TYPE'] = 'filesystem' 
 # app.config['SESSION_PERMANENT'] = False
-# app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=5)  
+# app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=15)  
 # Session(app)
 # from flask_session import Session
 
@@ -1486,7 +1488,451 @@ def listado_no_registrado_excel():
 
     return send_file(output, download_name=nombre_archivo, as_attachment=True)
 
-@app.route('/check_session')
+
+
+# ................
+
+
+# insercion a la DB
+
+def cargar_excel_a_db(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        # Verificar si la solicitud es POST
+        if request.method == "POST":
+            if 'loggedin' not in session:
+                return redirect(url_for('login'))
+            
+            # Verificar si el usuario tiene permisos de super_admin
+            if session.get('Super_Admin') != 1:
+                return render_template("gestionar_data.html", error="No tiene permisos para realizar esta acción.")
+            if 'file' not in request.files or request.files['file'].filename == '':
+                return render_template("gestionar_data.html", error="Debe seleccionar un archivo Excel para cargar datos.")
+            
+            file = request.files['file']
+            if not file.filename.endswith('.xlsx'):
+                return render_template("gestionar_data.html", error="El archivo debe ser un archivo Excel (.xlsx).")
+            
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.root_path, "uploads", filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            file.save(file_path)
+
+            try:
+                # Leer el archivo Excel
+                df = pd.read_excel(file_path)
+
+                # Verificar que el archivo contiene las columnas necesarias
+                required_columns = [
+                    "Type", "Cedula", "Name_Com", "Code", "Location_Physical",
+                    "Location_Admin", "manually", "suspended", "Estatus", "ESTADOS",
+                    "Cedula_autorizado", "Nombre_autorizado"
+                ]
+                missing_columns = [col for col in required_columns if col not in df.columns]
+                if missing_columns:
+                    return render_template("gestionar_data.html", error=f"El archivo Excel no contiene las columnas necesarias: {', '.join(missing_columns)}")
+                
+                # Reemplazar NaN con valores predeterminados o NULL
+                try:
+                    # Convertir los tipos de datos primero para evitar problemas con fillna
+                    df["Cedula"] = pd.to_numeric(df["Cedula"], errors='coerce')
+                    df["Code"] = pd.to_numeric(df["Code"], errors='coerce')
+                    df["manually"] = pd.to_numeric(df["manually"], errors='coerce')
+                    df["suspended"] = pd.to_numeric(df["suspended"], errors='coerce')
+                    df["Estatus"] = pd.to_numeric(df["Estatus"], errors='coerce')
+                    
+                    text_columns = ["Type", "Name_Com", "Location_Physical", "Location_Admin", 
+                                    "ESTADOS", "Cedula_autorizado", "Nombre_autorizado"]
+                    for col in text_columns:
+                        df[col] = df[col].astype(str).replace('nan', '')
+                    
+                    df = df.fillna({
+                        "Type": "", "Cedula": 0, "Name_Com": "", "Code": 0,
+                        "Location_Physical": "", "Location_Admin": "",
+                        "manually": 0, "suspended": 0, "Estatus": 1,
+                        "ESTADOS": "", "Cedula_autorizado": "", "Nombre_autorizado": ""
+                    })
+                    
+                    int_columns = ["Cedula", "Code", "manually", "suspended", "Estatus"]
+                    for col in int_columns:
+                        df[col] = df[col].fillna(0).astype(int)
+                except Exception as e:
+                    return render_template("gestionar_data.html", error=f"Error al procesar los tipos de datos: {str(e)}")
+
+                # Insertar datos en la base de datos con validación de duplicados
+                cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+                registros_insertados = 0  # Contador de registros insertados
+                for _, row in df.iterrows():
+                    # Verificar si la cédula ya existe en la base de datos
+                    cursor.execute('SELECT COUNT(*) AS count FROM data WHERE Cedula = %s', (row['Cedula'],))
+                    exists = cursor.fetchone()['count']
+                    if exists == 0:
+                        cursor.execute('''
+                            INSERT INTO data (Type, Cedula, Name_Com, Code, Location_Physical, Location_Admin, manually, suspended, Estatus, ESTADOS, Cedula_autorizado, Nombre_autorizado)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ''', (
+                            row['Type'], row['Cedula'], row['Name_Com'], row['Code'],
+                            row['Location_Physical'], row['Location_Admin'], row['manually'],
+                            row['suspended'], row['Estatus'], row['ESTADOS'],
+                            row['Cedula_autorizado'], row['Nombre_autorizado']
+                        ))
+                        registros_insertados += 1
+                MySQL.connection.commit()
+                cursor.close()
+                return func(*args, **kwargs, success=f"Los datos han sido cargados correctamente. Registros insertados: {registros_insertados}.")
+            except Exception as e:
+                MySQL.connection.rollback()
+                return render_template("gestionar_data.html", error=f"Error al procesar el archivo: {str(e)}")
+        
+        # Si el método no es POST, simplemente renderizar la vista
+        return func(*args, **kwargs)
+    return wrapper
+
+@app.route("/cargar_data", methods=["GET", "POST"])
+@cargar_excel_a_db
+def cargar_data(success=None):
+    
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
+    
+    # Verificar si el usuario tiene permisos de super_admin
+    if session.get('Super_Admin') != 1:
+        return render_template("gestionar_data.html", error="No tiene permisos para realizar esta acción.")
+    if request.method == "GET":
+        # Redirigir a la página principal si se accede con GET
+        return redirect(url_for('gestionar_data'))
+    return render_template("gestionar_data.html", success=success)
+
+
+# vaciar la DB
+@app.route("/vaciar_db", methods=["POST"])
+def vaciar_db():
+    # Verificar que el usuario esté autenticado
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
+    
+    # Verificar si el usuario tiene permisos de super_admin
+    if session.get('Super_Admin') != 1:
+        return render_template("gestionar_data.html", error="No tiene permisos para realizar esta acción.")
+    
+    cursor = None
+    try:
+        cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+        
+        # Verificar conexión a la base de datos
+        cursor.execute("SELECT 1")
+        if not cursor.fetchone():
+            return render_template("gestionar_data.html", error="No se pudo conectar a la base de datos.")
+        
+        # Iniciar transacción
+        cursor.execute("START TRANSACTION")
+        
+        # Obtener contador antes de vaciar para el registro
+        cursor.execute("SELECT COUNT(*) AS total FROM data")
+        result = cursor.fetchone()
+        total_registros = result['total'] if result else 0
+        
+        # Verificar que las tablas existen
+        cursor.execute("SHOW TABLES LIKE 'delivery'")
+        delivery_exists = cursor.fetchone() is not None
+        cursor.execute("SHOW TABLES LIKE 'data'")
+        data_exists = cursor.fetchone() is not None
+        
+        if not delivery_exists or not data_exists:
+            raise Exception("Las tablas necesarias no existen en la base de datos")
+        
+        # Desactivar temporalmente verificación de claves foráneas
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+
+        # Eliminar primero los registros de delivery ya que tiene FK a data
+        cursor.execute("DELETE FROM delivery")
+        deleted_delivery = cursor.rowcount
+        
+        # Eliminar todos los registros de la tabla data
+        cursor.execute("DELETE FROM data")
+        deleted_data = cursor.rowcount
+        
+        # Reactivar verificación de claves foráneas
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+        
+        # Confirmar la transacción
+        MySQL.connection.commit()
+        
+        # Registrar la acción en el historial
+        action_message = f'Vació la base de datos. Se eliminaron {total_registros} registros de data y {deleted_delivery} registros de delivery'
+        cursor.execute('INSERT INTO user_history (cedula, user, action, time_login) VALUES (%s, %s, %s, %s)', 
+                      (session['cedula'], session['username'], action_message, datetime.now()))
+        MySQL.connection.commit()
+        
+        success_message = f"Base de datos vaciada correctamente. Se eliminaron {total_registros} registros de data y {deleted_delivery} registros de delivery."
+        return render_template("gestionar_data.html", success=success_message)
+    
+    except Exception as e:
+        # Revertir cambios en caso de error
+        if cursor:
+            try:
+                # Asegurar que la verificación de claves foráneas se reactiva incluso en caso de error
+                cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+                MySQL.connection.rollback()
+            except:
+                pass  # Evitar errores en cascada si la conexión ya está corrupta
+        
+        error_message = f"Error al vaciar la base de datos: {str(e)}"
+        return render_template("gestionar_data.html", error=error_message)
+    
+    finally:
+        # Asegurar que el cursor se cierra incluso si hay una excepción
+        if cursor:
+            try:
+                cursor.close()
+            except:
+                pass  # Ignorar errores al cerrar el cursor
+
+
+# backud
+
+def backup_to_excel():
+    """Genera un backup de la base de datos en formato Excel."""
+    # Verificar autenticación y permisos primero
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
+    
+    if session.get('Super_Admin') != 1:
+        return render_template("gestionar_data.html", error="No tiene permisos para realizar esta acción.")
+    
+    try:
+        # Crear directorio de backups si no existe
+        backup_dir = os.path.join(app.root_path, "backups")
+        os.makedirs(backup_dir, exist_ok=True)
+
+        # Generar nombre de archivo con timestamp
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f'copia_db_{timestamp}.xlsx'
+        file_path = os.path.join(backup_dir, filename)
+
+        # Crear un Excel writer para múltiples hojas
+        writer = pd.ExcelWriter(file_path, engine='openpyxl')
+
+        # Obtener datos de cada tabla
+        cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+        
+        # Lista explícita de todas las tablas que deben exportarse, asegurando que 'delivery' esté incluida
+        tables = ['data', 'delivery', 'user_history', 'tabla']
+        
+        # Validar que todas las tablas existen para notificar cualquier problema
+        cursor.execute("SHOW TABLES")
+        all_db_tables = [row[f"Tables_in_{app.config['MYSQL_DB']}"] for row in cursor.fetchall()]
+        tables_exported = []
+        
+        # Create a log file for Excel backup
+        excel_log_path = os.path.join(backup_dir, f"excel_backup_log_{timestamp}.txt")
+        with open(excel_log_path, 'w', encoding='utf-8') as excel_log:
+            excel_log.write(f"Iniciando backup Excel: {datetime.now()}\n")
+            excel_log.write(f"Tablas encontradas en la base de datos: {', '.join(all_db_tables)}\n")
+            excel_log.write(f"Tablas a exportar: {', '.join(tables)}\n")
+            
+            # Verificar si 'delivery' está en la base de datos
+            if 'delivery' in all_db_tables:
+                excel_log.write("Tabla 'delivery' encontrada en la base de datos - se intentará exportar\n")
+            else:
+                excel_log.write("ADVERTENCIA: Tabla 'delivery' NO encontrada en la base de datos\n")
+            
+            for table in tables:
+                try:
+                    excel_log.write(f"Exportando tabla: {table}\n")
+                    # Use parametrized query to avoid SQL injection
+                    # Comprobar explícitamente si la tabla existe
+                    cursor.execute(f'SHOW TABLES LIKE %s', (table,))
+                    table_exists = cursor.fetchone() is not None
+                    
+                    if table_exists:
+                        # Explicitly use parametrized SELECT to ensure proper execution
+                        # Usar consulta con manejo de errores explícito
+                        try:
+                            excel_log.write(f"Ejecutando SELECT en tabla: {table}\n")
+                            cursor.execute(f'SELECT * FROM `{table}`')
+                            data = cursor.fetchall()
+                            excel_log.write(f"Obtenidos {len(data) if data else 0} registros de {table}\n")
+                            
+                            if data:
+                                # Asegurar que los datos están en formato correcto para pandas
+                                try:
+                                    df = pd.DataFrame(data)
+                                    df.to_excel(writer, sheet_name=table, index=False)
+                                    tables_exported.append(table)
+                                    excel_log.write(f"✓ Tabla {table} exportada exitosamente. {len(data)} registros.\n")
+                                except Exception as df_error:
+                                    excel_log.write(f"Error al convertir datos de {table} a DataFrame: {str(df_error)}\n")
+                            else:
+                                excel_log.write(f"La tabla {table} existe pero no contiene datos.\n")
+                                # Add empty DataFrame to include the table structure
+                                cursor.execute(f'DESCRIBE `{table}`')
+                                columns = cursor.fetchall()
+                                column_names = [col['Field'] for col in columns]
+                                empty_df = pd.DataFrame(columns=column_names)
+                                empty_df.to_excel(writer, sheet_name=table, index=False)
+                                tables_exported.append(table)
+                                excel_log.write(f"Se ha exportado la estructura de la tabla {table} sin datos.\n")
+                        except Exception as query_error:
+                            excel_log.write(f"Error al ejecutar consulta en tabla {table}: {str(query_error)}\n")
+                    else:
+                        excel_log.write(f"La tabla {table} no fue encontrada en la base de datos.\n")
+                        
+                        # Si la tabla es 'delivery', imprimir información adicional para diagnóstico
+                        if table == 'delivery':
+                            excel_log.write("ATENCIÓN: La tabla 'delivery' no existe o no es accesible\n")
+                            # Verificar si podemos enumerar tablas para diagnóstico
+                            try:
+                                cursor.execute("SHOW TABLES")
+                                tables_in_db = [row[f"Tables_in_{app.config['MYSQL_DB']}"] for row in cursor.fetchall()]
+                                excel_log.write(f"Tablas disponibles en la base de datos: {', '.join(tables_in_db)}\n")
+                            except Exception as list_error:
+                                excel_log.write(f"No se pudieron listar las tablas: {str(list_error)}\n")
+                except Exception as table_error:
+                    excel_log.write(f"Error al exportar la tabla {table}: {str(table_error)}\n")
+
+        # Guardar el archivo Excel
+        try:
+            # Verificar si hay tablas para exportar
+            if not tables_exported:
+                with open(excel_log_path, 'a', encoding='utf-8') as excel_log:
+                    excel_log.write("ADVERTENCIA: No se ha exportado ninguna tabla. Verificando tablas en la base de datos...\n")
+                    # Intentar obtener todas las tablas de la base de datos
+                    cursor.execute("SHOW TABLES")
+                    all_tables = [row[f"Tables_in_{app.config['MYSQL_DB']}"] for row in cursor.fetchall()]
+                    excel_log.write(f"Tablas encontradas en la base de datos: {', '.join(all_tables)}\n")
+                    excel_log.write("Intentando exportar todas las tablas disponibles...\n")
+                    
+                    # Intentar exportar todas las tablas encontradas
+                    for db_table in all_tables:
+                        try:
+                            cursor.execute(f"SELECT * FROM `{db_table}`")
+                            data = cursor.fetchall()
+                            if data:
+                                df = pd.DataFrame(data)
+                                df.to_excel(writer, sheet_name=db_table[:31], index=False)  # Excel limit sheet name to 31 chars
+                                tables_exported.append(db_table)
+                                excel_log.write(f"Tabla {db_table} exportada exitosamente como respaldo. {len(data)} registros.\n")
+                        except Exception as table_error:
+                            excel_log.write(f"Error al exportar tabla {db_table} como respaldo: {str(table_error)}\n")
+            
+            writer.close()
+            with open(excel_log_path, 'a', encoding='utf-8') as excel_log:
+                excel_log.write(f"Excel guardado correctamente en {file_path}\n")
+                excel_log.write(f"Tablas exportadas: {', '.join(tables_exported)}\n")
+                
+                # Verificar si se exportó la tabla 'delivery'
+                if 'delivery' not in tables_exported:
+                    excel_log.write("ADVERTENCIA: La tabla 'delivery' no se ha exportado. Verifique los permisos y la existencia de la tabla.\n")
+        except Exception as save_error:
+            with open(excel_log_path, 'a', encoding='utf-8') as excel_log:
+                excel_log.write(f"Error al guardar el archivo Excel: {str(save_error)}\n")
+            raise
+
+        # Registrar la acción en el historial
+        cursor.execute(
+            'INSERT INTO user_history (cedula, user, action, time_login) VALUES (%s, %s, %s, %s)',
+            (session['cedula'], session['username'], 'Generó backup Excel de la base de datos', datetime.now())
+        )
+        MySQL.connection.commit()
+        cursor.close()
+
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+    except Exception as e:
+        if 'cursor' in locals():
+            cursor.close()
+        error_msg = str(e)
+        
+        # Registrar el error en un archivo de log para debugging
+        try:
+            backup_dir = os.path.join(app.root_path, "backups")
+            os.makedirs(backup_dir, exist_ok=True)
+            error_log = os.path.join(backup_dir, f"excel_error_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+            
+            with open(error_log, 'w', encoding='utf-8') as f:
+                f.write(f"Error timestamp: {datetime.now()}\n")
+                f.write(f"Error message: {error_msg}\n")
+                f.write(f"Error type: {type(e).__name__}\n")
+                
+                # Si es un error de MySQL, intentar obtener más detalles
+                if hasattr(e, 'args') and len(e.args) > 0:
+                    f.write(f"Error details: {e.args}\n")
+        except Exception as log_error:
+            # Si no podemos registrar el error, al menos añadirlo al mensaje
+            error_msg += f" (Error adicional al registrar log: {str(log_error)})"
+        
+        return render_template("gestionar_data.html", error=f"Error al crear backup Excel: {error_msg}")
+
+
+@app.route("/backup_excel", methods=["GET", "POST"])
+def backup_excel_route():
+    """Ruta para generar backup Excel de la base de datos."""
+    # Verificar autenticación primero
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
+    
+    # Verificar permisos
+    if session.get('Super_Admin') != 1:
+        return render_template("gestionar_data.html", error="No tiene permisos para realizar esta acción.")
+    
+    try:
+        # Manejo según el método HTTP
+        if request.method == "POST":
+            # Verificar si es una confirmación de backup
+            action = request.form.get('action')
+            if action == 'confirm':
+                # Generar el backup Excel
+                return backup_to_excel()
+            else:
+                # Si no hay acción o es diferente, redirigir a la página principal
+                return redirect(url_for('gestionar_data'))
+        
+        elif request.method == "GET":
+            # Mostrar la página de confirmación en la interfaz
+            return render_template("gestionar_data.html")
+        
+        else:
+            # Método no permitido (diferente de GET o POST)
+            return render_template("gestionar_data.html", error="Método no permitido para esta operación."), 405
+    
+    except Exception as e:
+        # Capturar cualquier error no manejado
+        return render_template("gestionar_data.html", error=f"Error al generar backup Excel: {str(e)}")
+
+
+# Ruta para gestionar la DB (unifica las funciones de backup y carga)
+@app.route("/gestionar_data", methods=["GET", "POST"])
+def gestionar_data():
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
+    
+    if session.get('Super_Admin') != 1:
+        return render_template("gestionar_data.html", error="No tiene permisos para realizar esta acción.")
+    
+    if request.method == "POST":
+        # Procesar formularios para confirmación de backups
+        action = request.form.get('action')
+        tipo_backup = request.form.get('tipo_backup')
+        
+        try:
+            if action == 'confirm' and tipo_backup == 'sql':
+                return backup_to_sql()
+            elif action == 'confirm' and tipo_backup == 'excel':
+                return backup_to_excel()
+            elif 'file' in request.files:
+                # Si se está subiendo un archivo, manejar la carga
+                return cargar_data()
+        except Exception as e:
+            return render_template("gestionar_data.html", error=f"Error al procesar la solicitud: {str(e)}")
+    
+    # Para solicitudes GET, simplemente mostrar la página de gestión
+    return render_template("gestionar_data.html")
 def check_session():
     if 'loggedin' in session:
         return jsonify({"active": True})

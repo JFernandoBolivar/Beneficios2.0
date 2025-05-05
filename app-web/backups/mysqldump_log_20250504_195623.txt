@@ -1,0 +1,28 @@
+Log de búsqueda de mysqldump - 2025-05-04 19:56:23.787876
+Sistema operativo: nt
+Directorio de trabajo actual: C:\Users\Usuario\OneDrive\Documentos\web-definitiva\nombre_del_entorno
+Directorio de backup: c:\Users\Usuario\OneDrive\Documentos\web-definitiva\nombre_del_entorno\beneficios2.0\Beneficios2.0\app-web\backups
+
+Configuración de base de datos:
+- Host: localhost
+- DB: abrilpasivoss
+
+Buscando mysqldump.exe en las siguientes rutas:
+Verificando: C:\xampp\mysql\bin\mysqldump.exe
+¡ENCONTRADO!: C:\xampp\mysql\bin\mysqldump.exe (Verificado como ejecutable válido)
+Ejecutando comando en Windows:
+  - mysqldump_cmd: C:\xampp\mysql\bin\mysqldump.exe
+  - my_cnf_path: c:\Users\Usuario\OneDrive\Documentos\web-definitiva\nombre_del_entorno\beneficios2.0\Beneficios2.0\app-web\backups\.my.cnf
+  - file_path: c:\Users\Usuario\OneDrive\Documentos\web-definitiva\nombre_del_entorno\beneficios2.0\Beneficios2.0\app-web\backups\backup_db_20250504_195623.sql
+  - Comando completo: C:\xampp\mysql\bin\mysqldump.exe --defaults-file=c:\Users\Usuario\OneDrive\Documentos\web-definitiva\nombre_del_entorno\beneficios2.0\Beneficios2.0\app-web\backups\.my.cnf --no-tablespaces --skip-triggers --complete-insert --extended-insert=FALSE --skip-add-locks abrilpasivoss --result-file=c:\Users\Usuario\OneDrive\Documentos\web-definitiva\nombre_del_entorno\beneficios2.0\Beneficios2.0\app-web\backups\backup_db_20250504_195623.sql
+Usando codificación latin1 con modo de error surrogateescape para el proceso
+Error al ejecutar mysqldump: mysqldump.exe: Got error: 1045: "Plugin caching_sha2_password could not be loaded: No se puede encontrar el módulo especificado. Library path is 'caching_sha2_password.dll'" when trying to connect
+
+Comando ejecutado: C:\xampp\mysql\bin\mysqldump.exe --defaults-file=c:\Users\Usuario\OneDrive\Documentos\web-definitiva\nombre_del_entorno\beneficios2.0\Beneficios2.0\app-web\backups\.my.cnf --no-tablespaces --skip-triggers --complete-insert --extended-insert=FALSE --skip-add-locks abrilpasivoss --result-file=c:\Users\Usuario\OneDrive\Documentos\web-definitiva\nombre_del_entorno\beneficios2.0\Beneficios2.0\app-web\backups\backup_db_20250504_195623.sql
+Error general: Error en mysqldump: mysqldump.exe: Got error: 1045: "Plugin caching_sha2_password could not be loaded: No se puede encontrar el módulo especificado. Library path is 'caching_sha2_password.dll'" when trying to connect
+
+Traceback (most recent call last):
+  File "c:\Users\Usuario\OneDrive\Documentos\web-definitiva\nombre_del_entorno\beneficios2.0\Beneficios2.0\app-web\app.py", line 2512, in backup_to_sql
+    raise Exception(f"Error en mysqldump: {error_msg}")
+Exception: Error en mysqldump: mysqldump.exe: Got error: 1045: "Plugin caching_sha2_password could not be loaded: No se puede encontrar el módulo especificado. Library path is 'caching_sha2_password.dll'" when trying to connect
+

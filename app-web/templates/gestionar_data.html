@@ -1,0 +1,272 @@
+{% extends "navbar/navUser.html" %} {% block contentt %}
+<div class="container_tabla">
+  <div class="header_tabla">
+    <button class="exit_tabla btn btn-outline-danger">
+      <i class="bx bx-log-out"></i><label class="salir">Salir</label>
+    </button>
+    <a
+      href="{{ url_for('listado_pdf') }}"
+      class="btn btn-primary"
+      id="downloadPDF1"
+    >
+      Descargar <i class="bx bxs-download fs-3"></i>
+    </a>
+  </div>
+  <h1 class="fs-3 text-center">Gestión de Datos</h1>
+  <hr />
+
+  <!-- Mensajes de éxito o error -->
+  <!-- Mensajes de éxito o error -->
+  {% if success %}
+  <div class="alert mse" role="alert">
+    <button id="exit">X</button> <i class="bx bx-check-circle icons"></i>
+    <h2>Éxito</h2>
+    <p>{{ success }}</p>
+  </div>
+  {% endif %} {% if error %}
+  <div class="alert mse" role="alert">
+    <button id="exit">X</button> <i class="bx bx-message-square-x icons"></i>
+    <h2>Error</h2>
+    <p>{{ error }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Formulario para cargar archivo Excel -->
+  <div
+    class="contentBusc d-flex justify-content-center align-items-center mt-5"
+  >
+    <form
+      action="/cargar_data"
+      method="POST"
+      enctype="multipart/form-data"
+      id="cargarExcelForm"
+      class="d-flex flex-column align-items-center"
+    >
+      <div class="dropzone-area mb-3" id="dropzoneArea">
+        <p id="dropzoneText">
+          Arrastra y suelta tu archivo aquí o haz clic para seleccionarlo
+        </p>
+        <input
+          type="file"
+          name="file"
+          id="file"
+          class="form-control-file"
+          accept=".xlsx"
+          required
+        />
+        <button
+          type="button"
+          class="btn btn-secondary mt-2"
+          id="selectFileButton"
+        >
+          Seleccionar Archivo
+        </button>
+      </div>
+      <button type="submit" class="btn btn-primary">
+        <i class="bx bx-upload"></i> Cargar Datos
+      </button>
+    </form>
+  </div>
+
+  <!-- Botones para otras acciones -->
+  <div class="skp_tabla mt-4">
+    <button
+      type="button"
+      class="btn btn-info btn-lg me-2"
+      onclick="iniciarBackup('excel')"
+    >
+      <i class="bx bx-save"></i> Copia de Seguridad (Excel)
+    </button>
+    {% if session.get('Super_Admin') == 1 %}
+    <button
+      type="button"
+      id="vaciarDbBtn"
+      class="btn btn-danger btn-lg"
+      onclick="confirmarVaciarDb()"
+    >
+      <i class="bx bx-trash"></i> Vaciar Base de Datos
+    </button>
+    {% endif %}
+  </div>
+
+  <!-- Formularios ocultos para los backups -->
+  <form
+    id="backup-excel-form"
+    action="/backup_excel"
+    method="POST"
+    style="display: none"
+  >
+    <input type="hidden" name="action" value="confirm" />
+  </form>
+
+  <form
+    id="vaciarDbForm"
+    action="/vaciar_db"
+    method="POST"
+    style="display: none"
+  ></form>
+
+  <style>
+    .contentBusc {
+      margin-bottom: 2em;
+    }
+    .dropzone-area {
+      border: 2px dashed #ccc;
+      border-radius: 5px;
+      padding: 40px;
+      text-align: center;
+      transition: border-color 0.3s ease;
+      width: 500px; /* Ancho aumentado */
+      margin: 20px auto; /* Más margen */
+      position: relative;
+    }
+
+    .dropzone-area.dragover {
+      border-color: #007bff; /* Azul al arrastrar */
+    }
+
+    .dropzone-area input[type="file"] {
+      display: none;
+    }
+
+    #selectFileButton {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  </style>
+
+  <script>
+    const swalCustomStyles = {
+      background: "#ffffff", // Fondo blanco
+      color: "#000000", // Letras negras
+    };
+    // Drag and drop functionality
+    const dropzoneArea = document.getElementById("dropzoneArea");
+    const fileInput = document.getElementById("file");
+    const dropzoneText = document.getElementById("dropzoneText");
+    const selectFileButton = document.getElementById("selectFileButton");
+
+    dropzoneArea.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropzoneArea.classList.add("dragover");
+    });
+
+    dropzoneArea.addEventListener("dragleave", () => {
+      dropzoneArea.classList.remove("dragover");
+    });
+
+    dropzoneArea.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzoneArea.classList.remove("dragover");
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        fileInput.files = files;
+        dropzoneText.textContent = files[0].name; // Mostrar el nombre del archivo
+      }
+    });
+
+    selectFileButton.addEventListener("click", () => {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files.length > 0) {
+        dropzoneText.textContent = fileInput.files[0].name; // Mostrar el nombre del archivo
+      }
+    });
+
+    function validarArchivo(input) {
+      const archivo = input.files[0];
+      if (archivo) {
+        if (!archivo.name.endsWith(".xlsx")) {
+          Swal.fire({
+            icon: "error",
+            title: "Archivo no válido",
+            text: "Por favor, seleccione un archivo Excel (.xlsx)",
+            customClass: {
+              title: "swal-title",
+              content: "swal-text",
+            },
+          });
+          input.value = "";
+          dropzoneText.textContent =
+            "Arrastra y suelta tu archivo aquí o haz clic para seleccionarlo";
+        } else if (archivo.size > 10 * 1024 * 1024) {
+          // 10MB límite
+          Swal.fire({
+            icon: "error",
+            title: "Archivo demasiado grande",
+            text: "El archivo no debe superar los 10MB",
+            customClass: {
+              title: "swal-title",
+              content: "swal-text",
+            },
+          });
+          input.value = "";
+          dropzoneText.textContent =
+            "Arrastra y suelta tu archivo aquí o haz clic para seleccionarlo";
+        }
+      }
+    }
+
+    document.getElementById("cargarExcelForm").onsubmit = function (e) {
+      if (!fileInput.files || fileInput.files.length === 0) {
+        e.preventDefault();
+        Swal.fire({
+          icon: "error",
+          title: "No hay archivo seleccionado",
+          text: "Por favor, seleccione un archivo Excel para cargar",
+          customClass: {
+            title: "swal-title",
+            content: "swal-text",
+          },
+        });
+      }
+    };
+
+    function iniciarBackup(tipo) {
+      Swal.fire({
+        title: "Confirmar acción",
+        text: `¿Desea generar un copia ${tipo.toUpperCase()} de la base de datos?`,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Sí, generar copia de seguridad",
+        cancelButtonText: "Cancelar",
+        customClass: {
+          title: "swal-title",
+          content: "swal-text",
+        },
+      }).then((result) => {
+        if (result.isConfirmed) {
+          document.getElementById(`backup-${tipo}-form`).submit();
+        }
+      });
+    }
+
+    function confirmarVaciarDb() {
+      Swal.fire({
+        title: "¿Está seguro?",
+        text: "Esta acción eliminará TODOS los registros de la base de datos y NO se puede deshacer.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Sí, vaciar base de datos",
+        cancelButtonText: "Cancelar",
+        customClass: {
+          title: "swal-title",
+          content: "swal-text",
+        },
+      }).then((result) => {
+        if (result.isConfirmed) {
+          document.getElementById("vaciarDbForm").submit();
+        }
+      });
+    }
+  </script>
+</div>
+{% endblock %}

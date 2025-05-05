@@ -1,0 +1,23 @@
+Log de búsqueda de mysqldump - 2025-05-03 16:08:09.785829
+Sistema operativo: nt
+Directorio de trabajo actual: C:\Users\Usuario\OneDrive\Documentos\web-definitiva\nombre_del_entorno
+Directorio de backup: c:\Users\Usuario\OneDrive\Documentos\web-definitiva\nombre_del_entorno\beneficios2.0\Beneficios2.0\app-web\backups
+
+Configuración de base de datos:
+- Host: localhost
+- DB: abrilpasivoss
+
+Buscando mysqldump.exe en las siguientes rutas:
+Verificando: C:\xampp\mysql\bin\mysqldump.exe
+¡ENCONTRADO!: C:\xampp\mysql\bin\mysqldump.exe (Verificado como ejecutable válido)
+Ejecutando comando en Windows:
+  - mysqldump_cmd: C:\xampp\mysql\bin\mysqldump.exe
+  - my_cnf_path: c:\Users\Usuario\OneDrive\Documentos\web-definitiva\nombre_del_entorno\beneficios2.0\Beneficios2.0\app-web\backups\.my.cnf
+  - file_path: c:\Users\Usuario\OneDrive\Documentos\web-definitiva\nombre_del_entorno\beneficios2.0\Beneficios2.0\app-web\backups\backup_db_20250503_160809.sql
+  - Comando completo: C:\xampp\mysql\bin\mysqldump.exe --defaults-file=c:\Users\Usuario\OneDrive\Documentos\web-definitiva\nombre_del_entorno\beneficios2.0\Beneficios2.0\app-web\backups\.my.cnf --no-tablespaces --skip-triggers --complete-insert --extended-insert=FALSE --skip-add-locks abrilpasivoss --result-file=c:\Users\Usuario\OneDrive\Documentos\web-definitiva\nombre_del_entorno\beneficios2.0\Beneficios2.0\app-web\backups\backup_db_20250503_160809.sql
+Error general: 'utf-8' codec can't decode byte 0xf3 in position 109: invalid continuation byte
+Traceback (most recent call last):
+  File "c:\Users\Usuario\OneDrive\Documentos\web-definitiva\nombre_del_entorno\beneficios2.0\Beneficios2.0\app-web\app.py", line 2186, in backup_to_sql
+    error_msg = error.decode() if error else "Error desconocido al ejecutar mysqldump"
+                ~~~~~~~~~~~~^^
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xf3 in position 109: invalid continuation byte

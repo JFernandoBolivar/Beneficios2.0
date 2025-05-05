@@ -1,0 +1,23 @@
+Iniciando backup Excel: 2025-05-05 00:58:06.360789
+Tablas encontradas en la base de datos: data, delivery, tabla, user_history
+Tablas a exportar: data, delivery, user_history, tabla
+Tabla 'delivery' encontrada en la base de datos - se intentará exportar
+Exportando tabla: data
+Ejecutando SELECT en tabla: data
+Obtenidos 8287 registros de data
+✓ Tabla data exportada exitosamente. 8287 registros.
+Exportando tabla: delivery
+Ejecutando SELECT en tabla: delivery
+Obtenidos 0 registros de delivery
+La tabla delivery existe pero no contiene datos.
+Se ha exportado la estructura de la tabla delivery sin datos.
+Exportando tabla: user_history
+Ejecutando SELECT en tabla: user_history
+Obtenidos 2964 registros de user_history
+✓ Tabla user_history exportada exitosamente. 2964 registros.
+Exportando tabla: tabla
+Ejecutando SELECT en tabla: tabla
+Obtenidos 17 registros de tabla
+✓ Tabla tabla exportada exitosamente. 17 registros.
+Excel guardado correctamente en c:\Users\Usuario\OneDrive\Documentos\web-definitiva\nombre_del_entorno\beneficios2.0\Beneficios2.0\app-web\backups\backup_db_20250505_005806.xlsx
+Tablas exportadas: data, delivery, user_history, tabla
