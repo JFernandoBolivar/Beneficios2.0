@@ -21,7 +21,7 @@ app.config['SECRET_KEY'] = '3054=HitM'
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'user623'
-app.config['MYSQL_DB'] = 'gg'
+app.config['MYSQL_DB'] = 'mesmayo'
 MySQL = MySQL(app)
 # app.config['SESSION_TYPE'] = 'filesystem' 
 # app.config['SESSION_PERMANENT'] = False
@@ -136,7 +136,7 @@ def RegistUser():
     
     if request.method == "POST":
         cedula = request.form['cedula']
-        username = request.form['username']
+        username = request.form['username'].strip().upper()  # Convertir a mayúsculas
         password = request.form['password'].replace(" ", "") 
         
         cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -405,18 +405,18 @@ def registrar():
         
     cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
     
-  # Verificar si la cédula del autorizado o familiar ya existe  
+    # Verificar si la cédula del autorizado o familiar ya existe  
     cursor.execute('''
        SELECT COUNT(*) AS total
        FROM data
-        WHERE Cedula_autorizado = %s
+       WHERE Cedula_autorizado = %s
     ''', (CIFamily,))
     existe_cedula = cursor.fetchone()['total']
 
     if existe_cedula > 0:
-       cursor.close()
-       mensaje = "La cédula del autorizado  ya está registrada en el sistema."
-       return render_template('index.html', mensaje=mensaje, cedula=cedula, mensaje2="Por favor, verifique los datos ingresados.")
+        cursor.close()
+        mensaje = "La cédula del autorizado ya está registrada en el sistema."
+        return render_template('index.html', mensaje=mensaje, cedula=cedula, mensaje2="Por favor, verifique los datos ingresados.")
     
     cursor.execute('SELECT * FROM data WHERE Cedula = %s', (cedula,))
     data_exit = cursor.fetchone()
@@ -441,30 +441,30 @@ def registrar():
     
     estatus = data_exit['Estatus']
     if estatus == 1:
-    # Insertar en la tabla delivery para estatus 1
+        # Insertar en la tabla delivery para estatus 1
         cursor.execute('INSERT INTO delivery (Time_box, Staff_ID, Observation, Name_Family, Cedula_Family, Data_ID, Entregado, Lunch) VALUES (%s, %s, %s, %s, %s, %s, 1, %s)', 
-                   (hora_entrega, cedula_personal, observacion, nameFamily, CIFamily, data_exit['ID'], lunch))
+                       (hora_entrega, cedula_personal, observacion, nameFamily, CIFamily, data_exit['ID'], lunch))
 
     elif estatus == 2:
-    # Insertar en la tabla delivery para estatus 2
+        # Insertar en la tabla delivery para estatus 2
         cursor.execute('''
         INSERT INTO delivery (Time_box, Staff_ID, Observation, Data_ID, Entregado, Lunch) 
         VALUES (%s, %s, %s, %s, 1, %s)
-    ''', (hora_entrega, cedula_personal, observacion, data_exit['ID'], lunch))
+        ''', (hora_entrega, cedula_personal, observacion, data_exit['ID'], lunch))
 
-    # Verificar si los campos `Cedula_autorizado` y `Nombre_autorizado` están vacíos
+        # Verificar si los campos `Cedula_autorizado` y `Nombre_autorizado` están vacíos
         if not data_exit['Cedula_autorizado'] and not data_exit['Nombre_autorizado']:
-        # Actualizar los datos en los campos si están vacíos
+            # Actualizar los datos en los campos si están vacíos
             cursor.execute('''
             UPDATE data
             SET Cedula_autorizado = %s, Nombre_autorizado = %s 
             WHERE Cedula = %s
-        ''', (CIFamily, nameFamily, cedula))
+            ''', (CIFamily, nameFamily, cedula))
     else:
         # Si los campos ya tienen datos, no hacer nada
         print("Los campos Cedula_autorizado y Nombre_autorizado ya tienen datos. No se realizará ninguna modificación.")
 
-# Confirmar los cambios en la base de datos
+    # Confirmar los cambios en la base de datos
     MySQL.connection.commit()
     
     if data_exit['Cedula']:
@@ -474,7 +474,6 @@ def registrar():
     mensaje = "Registro exitoso."
     mensaje2 = "El registro se ha completado correctamente."
     
-  
     cursor.execute('SELECT COUNT(*) AS total_personas FROM data')
     total_personas = cursor.fetchone()['total_personas']
     cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery WHERE Entregado = 1 AND DATE(Time_box) = %s', (fecha,))
@@ -483,7 +482,6 @@ def registrar():
     cursor.close()
     
     return render_template('index.html', mensaje=mensaje, cedula=cedula, mensaje2=mensaje2, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
-
 # 78078
 # autorizado
 
@@ -976,9 +974,14 @@ def NuevoUserPasivo():
             max_id = cursor.fetchone()['max_id']
             new_id = max_id + 1 if max_id is not None else 1
 
-            cursor.execute('INSERT INTO data (ID, Cedula, Name_Com, Code, manually, Estatus, ESTADOS) VALUES (%s, %s, %s, %s, 1, %s, %s)', 
-                           (new_id, cedula, nombreCompleto, CodigoCarnet, estatus, estado))
+            # Insertar el nuevo registro en la tabla `data`
+            cursor.execute('''
+                INSERT INTO data (ID, Cedula, Name_Com, Code, manually, Estatus, ESTADOS, Cedula_autorizado, Nombre_autorizado) 
+                VALUES (%s, %s, %s, %s, 1, %s, %s, %s, %s)
+            ''', (new_id, cedula, nombreCompleto, CodigoCarnet, estatus, estado, CIFamiliar, Nombre_Familiar))
             MySQL.connection.commit()
+
+            # Registrar la acción en el historial
             cursor.execute('INSERT INTO user_history (cedula, user, action, time_login) VALUES (%s, %s, %s, %s)', 
                            (session['cedula'], session['username'], f'Registró un personal pasivo con cédula {cedula}', datetime.now()))
             MySQL.connection.commit()
@@ -986,8 +989,10 @@ def NuevoUserPasivo():
             if entregado:
                 cursor.execute('SELECT ID FROM data WHERE Cedula = %s', (cedula,))
                 data_id = cursor.fetchone()
-                cursor.execute('INSERT INTO delivery (Time_box, Staff_ID, Name_Family, Cedula_Family, Observation, Data_ID, Entregado, Lunch) VALUES (%s, %s, %s, %s, %s, %s, 1, %s)', 
-                               (horaEntrega, cedula_personal, Nombre_Familiar, CIFamiliar if CIFamiliar else None, observacion, data_id['ID'], lunch))
+                cursor.execute('''
+                    INSERT INTO delivery (Time_box, Staff_ID, Name_Family, Cedula_Family, Observation, Data_ID, Entregado, Lunch) 
+                    VALUES (%s, %s, %s, %s, %s, %s, 1, %s)
+                ''', (horaEntrega, cedula_personal, Nombre_Familiar, CIFamiliar if CIFamiliar else None, observacion, data_id['ID'], lunch))
 
                 MySQL.connection.commit()
                 cursor.execute('INSERT INTO user_history (cedula, user, action, time_login) VALUES (%s, %s, %s, %s)', 
