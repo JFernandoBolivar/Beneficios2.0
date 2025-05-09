@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, make_response, send_from_directory, send_file, jsonify
+
 from flask_mysqldb import MySQL, MySQLdb
 from werkzeug.utils import secure_filename
 import pandas as pd
@@ -23,11 +24,11 @@ app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'user623'
 app.config['MYSQL_DB'] = 'mesmayo'
 MySQL = MySQL(app)
-# app.config['SESSION_TYPE'] = 'filesystem' 
-# app.config['SESSION_PERMANENT'] = False
-# app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=15)  
-# Session(app)
-# from flask_session import Session
+app.config['SESSION_TYPE'] = 'filesystem' 
+app.config['SESSION_PERMANENT'] = False
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=1)  
+
+
 
 @app.route('/static/<path:filename>')
 def static_files(filename):
@@ -221,19 +222,6 @@ def consult():
                 total_personas = cursor.fetchone()['total_personas']
                 cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery d JOIN data ON d.Data_ID = data.ID WHERE d.Entregado = 1 AND data.Estatus = 2')
                 total_recibido = cursor.fetchone()['total_recibido']
-                # total_alert = int(total_recibido)
-                # alert = None
-                # alert_limite = None
-                # if total_alert == 550:
-                #     alert = f"{total_alert} personas despachadas"
-                #     alert_limite = "Se acerca al limite de 600 "
-                # elif total_alert == 590:
-                #     alert = f"{total_alert} personas despachadas"
-                #     alert_limite = "Se acerca al limite de 600"
-                # elif total_alert == 600:
-                #     alert = f"{total_alert} personas despachadas"
-                #     alert_limite = "Ha alcanzado limite de 600"
-                faltan = total_personas - total_recibido
                 cursor.close()
                 return render_template('index.html', super_admin=super_admin, data=data_exit, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
             elif estatus == 6:
@@ -248,18 +236,6 @@ def consult():
                 total_personas = cursor.fetchone()['total_personas']
                 cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery d JOIN data ON d.Data_ID = data.ID WHERE d.Entregado = 1 AND data.Estatus = 1')
                 total_recibido = cursor.fetchone()['total_recibido']
-                total_alert = int(total_recibido)
-                # alert = None
-                # alert_limite = None
-                # if total_alert == 550:
-                #     alert = f"{total_alert} personas despachadas"
-                #     alert_limite = "Se acerca al limite de 600 "
-                # elif total_alert == 590:
-                #     alert = f"{total_alert} personas despachadas"
-                #     alert_limite = "Se acerca al limite de 600"
-                # elif total_alert == 600:
-                #     alert = f"{total_alert} personas despachadas"
-                #     alert_limite = "Ha alcanzado limite de 600"
                 faltan = total_personas - total_recibido
                 cursor.close()
                 return render_template('index.html',  super_admin=super_admin, data=data_exit, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
@@ -269,31 +245,31 @@ def consult():
                 total_personas = cursor.fetchone()['total_personas']
                 cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery d JOIN data ON d.Data_ID = data.ID WHERE d.Entregado = 1 AND data.Estatus = 1')
                 total_recibido = cursor.fetchone()['total_recibido']
-                total_alert = int(total_recibido)
-                # alert = None
-                # alert_limite = None
-                # if total_alert == 550:
-                #     alert = f"{total_alert} personas despachadas"
-                #     alert_limite = "Se acerca al limite de 600 "
-                # elif total_alert == 590:
-                #     alert = f"{total_alert} personas despachadas"
-                #     alert_limite = "Se acerca al limite de 600"
-                # elif total_alert == 600:
-                #     alert = f"{total_alert} personas despachadas"
-                #     alert_limite = "Ha alcanzado limite de 600"
                 faltan = total_personas - total_recibido
                 cursor.close()
                 return render_template('index.html',  super_admin=super_admin, data=data_exit, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
             
             elif estatus == 11:
                 cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+    
+                # Contar el total de personas con Estatus = 11
                 cursor.execute('SELECT COUNT(*) AS total_personas FROM data WHERE Estatus = 1')
                 total_personas = cursor.fetchone()['total_personas']
-                cursor.execute('SELECT COUNT(*) AS total_recibido FROM delivery d JOIN data ON d.Data_ID = data.ID WHERE d.Entregado = 1 AND data.Estatus = 1')
+    
+                 # Contar el total de personas con Estatus = 11 que han recibido
+                cursor.execute('''
+                     SELECT COUNT(*) AS total_recibido 
+                     FROM delivery d 
+                    JOIN data ON d.Data_ID = data.ID 
+                   WHERE d.Entregado = 1 AND data.Estatus = 1
+                   ''')
                 total_recibido = cursor.fetchone()['total_recibido']
+    
+                 # Calcular cuántas personas faltan
                 faltan = total_personas - total_recibido
+    
                 cursor.close()
-                return render_template('index.html',  super_admin=super_admin, data=data_exit, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
+                return render_template('index.html', super_admin=super_admin, data=data_exit, total_personas=total_personas, total_recibido=total_recibido, faltan=faltan)
             
             elif estatus == 9:
                  mensaje = "Comisión vencida"
@@ -439,11 +415,12 @@ def registrar():
     CIFamily = CIFamily.upper() if CIFamily else None
     hora_entrega = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
+
     estatus = data_exit['Estatus']
-    if estatus == 1:
-        # Insertar en la tabla delivery para estatus 1
-        cursor.execute('INSERT INTO delivery (Time_box, Staff_ID, Observation, Name_Family, Cedula_Family, Data_ID, Entregado, Lunch) VALUES (%s, %s, %s, %s, %s, %s, 1, %s)', 
-                       (hora_entrega, cedula_personal, observacion, nameFamily, CIFamily, data_exit['ID'], lunch))
+    if estatus in [1, 10, 11]:
+    # Insertar en la tabla delivery para estatus 1, 10 y 11
+       cursor.execute('INSERT INTO delivery (Time_box, Staff_ID, Observation, Name_Family, Cedula_Family, Data_ID, Entregado, Lunch) VALUES (%s, %s, %s, %s, %s, %s, 1, %s)', 
+                   (hora_entrega, cedula_personal, observacion, nameFamily, CIFamily, data_exit['ID'], lunch))
 
     elif estatus == 2:
         # Insertar en la tabla delivery para estatus 2
@@ -460,6 +437,7 @@ def registrar():
             SET Cedula_autorizado = %s, Nombre_autorizado = %s 
             WHERE Cedula = %s
             ''', (CIFamily, nameFamily, cedula))
+            
     else:
         # Si los campos ya tienen datos, no hacer nada
         print("Los campos Cedula_autorizado y Nombre_autorizado ya tienen datos. No se realizará ninguna modificación.")
