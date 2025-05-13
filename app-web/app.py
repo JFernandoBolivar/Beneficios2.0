@@ -26,7 +26,7 @@ app.config['MYSQL_DB'] = 'mesmayo'
 MySQL = MySQL(app)
 app.config['SESSION_TYPE'] = 'filesystem' 
 app.config['SESSION_PERMANENT'] = False
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=1)  
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=15)  
 
 
 
@@ -1508,13 +1508,19 @@ def cargar_excel_a_db(func):
                 # Verificar que el archivo contiene las columnas necesarias
                 required_columns = [
                     "Type", "Cedula", "Name_Com", "Code", "Location_Physical",
-                    "Location_Admin", "manually", "suspended", "Estatus", "ESTADOS",
+                    "Location_Admin", "Estatus", "ESTADOS",
                     "Cedula_autorizado", "Nombre_autorizado"
                 ]
                 missing_columns = [col for col in required_columns if col not in df.columns]
                 if missing_columns:
                     return render_template("gestionar_data.html", error=f"El archivo Excel no contiene las columnas necesarias: {', '.join(missing_columns)}")
                 
+                # Agregar columnas faltantes con valores predeterminados
+                if "manually" not in df.columns:
+                    df["manually"] = 0
+                if "suspended" not in df.columns:
+                    df["suspended"] = 0
+
                 # Reemplazar NaN con valores predeterminados o NULL
                 try:
                     # Convertir los tipos de datos primero para evitar problemas con fillna
